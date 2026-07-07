@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+cache/
+.streamlit/
+
+# Data & source material (kept locally, not tracked)
+dataset/
+code-matlab/
+plans/
+docs/
+papers/
