@@ -20,6 +20,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from src import config          # noqa: E402
 from src import data_loader as dl  # noqa: E402
 from src import feature_extraction as fe  # noqa: E402
+from src import inference as inf  # noqa: E402
 from src import pipeline as pl   # noqa: E402
 
 st.set_page_config(page_title="EMG Fatigue Demo", layout="wide")
@@ -80,8 +81,10 @@ st.caption("sEMG (64-channel, 2000 Hz) · 14 features/channel · mRMR + SVM/KNN/
            "leave-one-subject-out (test = subject "
            f"{config.TEST_SUBJECT})")
 
-tab_overview, tab_signal, tab_features, tab_select, tab_classify = st.tabs(
-    ["📊 Overview", "📈 Signal & PSD", "🎯 Features", "🏅 Feature Selection", "🤖 Classification"]
+(tab_overview, tab_signal, tab_features, tab_select, tab_classify,
+ tab_predict) = st.tabs(
+    ["📊 Overview", "📈 Signal & PSD", "🎯 Features", "🏅 Feature Selection",
+     "🤖 Classification", "🔮 Predict / Inference"]
 )
 
 # --------------------------------------------------------------------------
@@ -286,3 +289,88 @@ with tab_classify:
         chart(fig)
     else:
         st.info("Select at least one model.")
+
+# --------------------------------------------------------------------------
+# Tab 6 — Predict / Inference (signal in -> fatigue or not)
+# --------------------------------------------------------------------------
+with tab_predict:
+    st.subheader("Đưa tín hiệu vào → có mỏi hay không")
+    st.caption("Chọn một file + một kênh EMG, bấm Dự đoán: mỗi mô hình đã huấn "
+               "luyện sẽ trả lời Normal / Fatigue kèm xác suất P(Fatigue). "
+               "Nhãn thật (suy từ tên file) hiển thị để đối chiếu.")
+
+    p_files = dl.list_files()
+    p_names = [f.name for f in p_files]
+    p_sel_file = st.selectbox("File", p_names, key="pred_file")
+    p_info = next(f for f in p_files if f.name == p_sel_file)
+
+    p_channels = load_signal(str(p_info.path))
+    p_mask = dl.valid_channel_mask(p_channels)
+    p_valid_idx = list(np.where(p_mask)[0])
+
+    # Honest note: was this subject in the training set or held out?
+    if p_info.subject == config.TEST_SUBJECT:
+        seen = (f"subject {p_info.subject} = **tập test (chưa từng thấy)** "
+                "→ dự đoán đáng tin hơn")
+    elif p_info.subject in config.TRAIN_SUBJECTS:
+        seen = (f"subject {p_info.subject} thuộc **tập train (mô hình đã thấy "
+                "dữ liệu tương tự)**")
+    else:
+        seen = f"subject {p_info.subject} không thuộc train/test"
+    st.caption(f"Nhãn thật: **{label_name(p_info.label)}** · condition "
+               f"`{p_info.condition}` · {seen}")
+
+    p_sel_ch = st.selectbox("Channel", p_valid_idx,
+                            format_func=lambda i: f"Channel {i}",
+                            key="pred_channel")
+
+    if st.button("🔮 Dự đoán", type="primary"):
+        x = p_channels[:, p_sel_ch]
+
+        # Context waveform for the chosen channel.
+        t = np.arange(len(x)) / config.FS
+        step = max(1, len(x) // 20000)
+        fig_p = px.line(x=t[::step], y=x[::step],
+                        labels={"x": "time (s)", "y": "amplitude"},
+                        title=f"Tín hiệu vào — channel {p_sel_ch}")
+        fig_p.update_traces(line=dict(width=1))
+        chart(fig_p)
+
+        preds = inf.predict_channel(x, out.results)
+        truth = int(p_info.label)
+        rows = []
+        for p in preds:
+            p_fat = p["p_fatigue"]
+            rows.append({
+                "Model": p["model"],
+                "Dự đoán": p["pred_name"],
+                "P(Fatigue)": p_fat,
+                "Đúng?": "✅" if p["pred"] == truth else "❌",
+            })
+        pred_df = pd.DataFrame(rows)
+
+        def _color_pred(v):
+            if v == "Fatigue":
+                return f"color: {LABEL_COLORS['Fatigue']}; font-weight: bold"
+            if v == "Normal":
+                return f"color: {LABEL_COLORS['Normal']}; font-weight: bold"
+            return ""
+
+        st.markdown("### Kết quả dự đoán của 4 mô hình")
+        st.dataframe(
+            pred_df.style
+                   .format({"P(Fatigue)": "{:.1%}"}, na_rep="—")
+                   .map(_color_pred, subset=pd.IndexSlice[:, ["Dự đoán"]]),
+            use_container_width=True, hide_index=True)
+
+        n_agree = sum(1 for p in preds if p["pred"] == truth)
+        st.caption(f"{n_agree}/{len(preds)} mô hình dự đoán khớp nhãn thật "
+                   f"(**{label_name(truth)}**).")
+
+        st.markdown("**14 đặc trưng của kênh này (đầu vào cho mô hình)**")
+        feats = fe.extract_channel_features(x)
+        fdf = pd.DataFrame({"feature": config.FEATURE_NAMES,
+                            "value": [feats[n] for n in config.FEATURE_NAMES]})
+        st.dataframe(fdf, use_container_width=True, hide_index=True)
+    else:
+        st.info("Chọn file + kênh rồi bấm **🔮 Dự đoán** để xem kết quả.")

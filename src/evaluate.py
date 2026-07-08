@@ -36,6 +36,7 @@ class ModelResult:
     confusion: np.ndarray
     roc: tuple[np.ndarray, np.ndarray] | None = None   # (fpr, tpr)
     features_used: list[str] = field(default_factory=list)
+    fitted_estimator: object | None = None   # model fit on full train, for inference
 
 
 def _metrics(y_true, y_pred) -> dict:
@@ -99,4 +100,5 @@ def evaluate_model(
         confusion=m["confusion"],
         roc=roc,
         features_used=features_used,
+        fitted_estimator=est,
     )
