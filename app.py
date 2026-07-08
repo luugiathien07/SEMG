@@ -43,10 +43,211 @@ st.markdown(
     [class*="st-key-predtable"] table td {
         padding: 0.5rem 0.75rem !important;
     }
+    .feat-tooltip-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        border-radius: 10px;
+        font-family: 'Inter', 'Segoe UI', sans-serif;
+        font-size: 0.95rem;
+        border: 1px solid #333;
+    }
+    .feat-tooltip-table thead th {
+        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        color: #e0e0e0;
+        padding: 12px 16px;
+        text-align: left;
+        font-weight: 600;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        border-bottom: 2px solid #0f3460;
+    }
+    .feat-tooltip-table tbody tr {
+        transition: background 0.2s ease;
+    }
+    .feat-tooltip-table tbody tr:nth-child(odd)  { background: #0d1117; }
+    .feat-tooltip-table tbody tr:nth-child(even) { background: #161b22; }
+    .feat-tooltip-table tbody tr:hover { background: #1a2332; }
+    .feat-tooltip-table td {
+        padding: 10px 16px;
+        border-bottom: 1px solid #21262d;
+        color: #c9d1d9;
+    }
+    .feat-tooltip-table td:last-child {
+        font-variant-numeric: tabular-nums;
+        text-align: right;
+        font-family: 'JetBrains Mono', 'Fira Code', monospace;
+        color: #79c0ff;
+    }
+    .feat-name-wrap {
+        position: relative;
+        display: inline-block;
+        cursor: help;
+        border-bottom: 1px dashed #58a6ff;
+        padding-bottom: 1px;
+        color: #58a6ff;
+        font-weight: 500;
+        transition: color 0.2s ease;
+    }
+    .feat-name-wrap:hover { color: #79c0ff; }
+    .feat-name-wrap .feat-tip {
+        visibility: hidden;
+        opacity: 0;
+        position: absolute;
+        z-index: 9999;
+        left: 0;
+        bottom: calc(100% + 10px);
+        width: 340px;
+        padding: 14px 16px;
+        border-radius: 10px;
+        background: linear-gradient(145deg, #1e2a3a 0%, #172030 100%);
+        border: 1px solid #30465e;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.45), 0 0 0 1px rgba(88,166,255,0.1);
+        color: #e6edf3;
+        font-size: 0.82rem;
+        font-weight: 400;
+        line-height: 1.55;
+        letter-spacing: 0.01em;
+        transition: opacity 0.25s ease, visibility 0.25s ease, transform 0.25s ease;
+        transform: translateY(4px);
+        pointer-events: none;
+    }
+    .feat-tooltip-table tbody tr:nth-child(-n+2) .feat-name-wrap .feat-tip {
+        bottom: auto;
+        top: calc(100% + 10px);
+        transform: translateY(-4px);
+    }
+    .feat-tooltip-table tbody tr:nth-child(-n+2) .feat-name-wrap:hover .feat-tip {
+        transform: translateY(0);
+    }
+    .feat-name-wrap .feat-tip::after {
+        content: '';
+        position: absolute;
+        top: 100%;
+        left: 24px;
+        border: 7px solid transparent;
+        border-top-color: #30465e;
+    }
+    .feat-tooltip-table tbody tr:nth-child(-n+2) .feat-name-wrap .feat-tip::after {
+        top: auto;
+        bottom: 100%;
+        border-top-color: transparent;
+        border-bottom-color: #30465e;
+    }
+    .feat-name-wrap .feat-tip .tip-title {
+        display: block;
+        font-weight: 700;
+        color: #58a6ff;
+        margin-bottom: 6px;
+        font-size: 0.85rem;
+    }
+    .feat-name-wrap .feat-tip .tip-meaning {
+        display: block;
+        margin-bottom: 5px;
+    }
+    .feat-name-wrap .feat-tip .tip-role {
+        display: block;
+        color: #8b949e;
+        font-size: 0.78rem;
+        padding-top: 5px;
+        border-top: 1px solid rgba(48,70,94,0.6);
+    }
+    .feat-name-wrap:hover .feat-tip {
+        visibility: visible;
+        opacity: 1;
+        transform: translateY(0);
+    }
     </style>
     """,
     unsafe_allow_html=True,
 )
+
+FEATURE_TOOLTIPS: dict[str, dict[str, str]] = {
+    "RMS": {
+        "meaning": "Root Mean Square — căn bậc hai trung bình bình phương biên độ tín hiệu.",
+        "role": "Đại diện cho công suất tín hiệu EMG. Khi cơ mỏi, RMS thường tăng do cần huy động thêm đơn vị vận động.",
+    },
+    "MAV": {
+        "meaning": "Mean Absolute Value — trung bình giá trị tuyệt đối của tín hiệu.",
+        "role": "Phản ánh mức co cơ trung bình. Tăng khi cơ mỏi do biên độ tín hiệu tăng. Phổ biến trong phân tích sEMG lâm sàng.",
+    },
+    "Skewness": {
+        "meaning": "Độ lệch (Skewness) — đo mức bất đối xứng của phân bố biên độ tín hiệu.",
+        "role": "Tín hiệu mỏi thường có phân bố lệch hơn so với trạng thái bình thường, phản ánh sự thay đổi trong mẫu kích hoạt cơ.",
+    },
+    "Kurtosis": {
+        "meaning": "Độ nhọn (Kurtosis) — đo mức tập trung đỉnh của phân bố biên độ so với phân bố chuẩn.",
+        "role": "Giá trị cao cho thấy tín hiệu có nhiều xung đột ngột. Thay đổi khi cơ mỏi do biến đổi trong tốc độ phóng thích đơn vị vận động.",
+    },
+    "Max": {
+        "meaning": "Giá trị cực đại của biên độ tín hiệu EMG trong cửa sổ phân tích.",
+        "role": "Phản ánh đỉnh co cơ tối đa. Khi mỏi, biên độ đỉnh có thể tăng do huy động thêm sợi cơ để bù trừ lực giảm.",
+    },
+    "Min": {
+        "meaning": "Giá trị cực tiểu của biên độ tín hiệu EMG trong cửa sổ phân tích.",
+        "role": "Kết hợp với Max để đánh giá biên độ dao động tổng thể (dynamic range) của tín hiệu sEMG.",
+    },
+    "STD": {
+        "meaning": "Standard Deviation — độ lệch chuẩn, đo mức biến thiên của biên độ tín hiệu.",
+        "role": "Tương quan chặt với RMS, phản ánh công suất tín hiệu. Tăng khi cơ mỏi do biên độ dao động lớn hơn.",
+    },
+    "Mean": {
+        "meaning": "Giá trị trung bình cộng của biên độ tín hiệu EMG.",
+        "role": "Thường gần 0 với tín hiệu EMG đã lọc. Sai lệch khỏi 0 có thể chỉ ra vấn đề về baseline hoặc nhiễu DC.",
+    },
+    "Spectral_Min": {
+        "meaning": "Giá trị nhỏ nhất trong phổ công suất (PSD) của tín hiệu.",
+        "role": "Cho biết mức năng lượng tối thiểu trong miền tần số. Hữu ích để đánh giá mức nền nhiễu phổ.",
+    },
+    "Spectral_Max": {
+        "meaning": "Giá trị lớn nhất trong phổ công suất (PSD) của tín hiệu.",
+        "role": "Cho biết đỉnh năng lượng trong miền tần số. Khi mỏi, đỉnh phổ thường dịch về tần số thấp hơn.",
+    },
+    "Spectral_STD": {
+        "meaning": "Độ lệch chuẩn của phổ công suất — đo mức phân tán năng lượng trên các tần số.",
+        "role": "Đặc trưng quan trọng trong mRMR top-3. Phản ánh sự tập trung hay phân tán năng lượng phổ khi cơ chuyển từ bình thường sang mỏi.",
+    },
+    "MDF": {
+        "meaning": "Median Frequency — tần số trung vị chia đôi tổng công suất phổ.",
+        "role": "Chỉ số vàng trong nghiên cứu mỏi cơ sEMG. MDF giảm khi cơ mỏi do dẫn truyền thần kinh chậm lại, là dấu hiệu sinh lý cổ điển.",
+    },
+    "MNF": {
+        "meaning": "Mean Frequency — tần số trung bình (trọng tâm phổ công suất).",
+        "role": "Tương tự MDF nhưng nhạy hơn với nhiễu. MNF giảm khi mỏi, phản ánh sự dịch chuyển phổ về tần số thấp.",
+    },
+    "Spectral_Entropy": {
+        "meaning": "Shannon Entropy của phổ công suất chuẩn hóa — đo mức hỗn loạn/phân tán năng lượng phổ.",
+        "role": "Đặc trưng mạnh nhất theo mRMR. Giá trị cao = năng lượng phân tán đều; thấp = tập trung vào vài tần số. Phân biệt rõ trạng thái bình thường vs mỏi.",
+    },
+}
+
+
+def _build_feature_tooltip_table(feats: dict[str, float]) -> str:
+    rows = []
+    for name in config.FEATURE_NAMES:
+        tip = FEATURE_TOOLTIPS.get(name, {})
+        meaning = tip.get("meaning", "")
+        role = tip.get("role", "")
+        val = feats.get(name, 0.0)
+        rows.append(
+            f'<tr>'
+            f'<td>'
+            f'<span class="feat-name-wrap">{name}'
+            f'<span class="feat-tip">'
+            f'<span class="tip-title">{name}</span>'
+            f'<span class="tip-meaning">{meaning}</span>'
+            f'<span class="tip-role">⚡ {role}</span>'
+            f'</span></span></td>'
+            f'<td>{val:.4g}</td>'
+            f'</tr>'
+        )
+    return (
+        '<table class="feat-tooltip-table">'
+        '<thead><tr><th>Đặc trưng</th><th>Giá trị</th></tr></thead>'
+        '<tbody>' + ''.join(rows) + '</tbody></table>'
+    )
+
 
 LABEL_COLORS = {"Normal": "#2E86DE", "Fatigue": "#E74C3C"}
 
@@ -166,9 +367,10 @@ with tab_signal:
 
     st.markdown("**14 features for this channel**")
     feats = fe.extract_channel_features(x)
-    fdf = pd.DataFrame({"feature": config.FEATURE_NAMES,
-                        "value": [feats[n] for n in config.FEATURE_NAMES]})
-    st.dataframe(fdf, use_container_width=True, hide_index=True)
+    st.markdown(
+        _build_feature_tooltip_table(feats),
+        unsafe_allow_html=True,
+    )
 
 # --------------------------------------------------------------------------
 # Tab 3 — Feature distributions
@@ -381,12 +583,10 @@ with tab_predict:
         with col_feat:
             st.markdown("### 14 đặc trưng của kênh này")
             feats = fe.extract_channel_features(x)
-            fdf = pd.DataFrame({"feature": config.FEATURE_NAMES,
-                                "value": [feats[n] for n in config.FEATURE_NAMES]})
             with st.container(key="predtable_features"):
-                st.table(
-                    fdf.rename(columns={"feature": "Đặc trưng", "value": "Giá trị"})
-                       .style.format({"Giá trị": "{:.4g}"})
-                       .hide(axis="index"))
+                st.markdown(
+                    _build_feature_tooltip_table(feats),
+                    unsafe_allow_html=True,
+                )
     else:
         st.info("Chọn file + kênh rồi bấm **🔮 Dự đoán** để xem kết quả.")
