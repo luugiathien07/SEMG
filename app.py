@@ -275,7 +275,7 @@ HOVERLABEL = dict(font=dict(size=20, color="white", family="Arial"),
 def chart(fig, **kwargs):
     """Apply the shared hover styling, then render the Plotly figure."""
     fig.update_layout(hoverlabel=HOVERLABEL, hovermode="closest")
-    kwargs.setdefault("use_container_width", True)
+    kwargs.setdefault("width", "stretch")
     st.plotly_chart(fig, **kwargs)
 
 
@@ -329,7 +329,7 @@ with tab_overview:
     per_file = (df.groupby(["file", "subject", "condition", "Class"])
                   .size().reset_index(name="valid_channels")
                   .sort_values(["subject", "condition"]))
-    st.dataframe(per_file, use_container_width=True, hide_index=True)
+    st.dataframe(per_file, width="stretch", hide_index=True)
 
 # --------------------------------------------------------------------------
 # Tab 2 — Signal & PSD
@@ -430,7 +430,7 @@ with tab_select:
                  title="Mutual-information relevance (bars) · mRMR order (left→right)")
     fig.update_xaxes(categoryorder="array", categoryarray=out.ranked_features)
     chart(fig)
-    st.dataframe(rank_df, use_container_width=True, hide_index=True)
+    st.dataframe(rank_df, width="stretch", hide_index=True)
 
 # --------------------------------------------------------------------------
 # Tab 5 — Classification
@@ -458,7 +458,7 @@ with tab_classify:
                                 ["Accuracy", "Precision", "Recall", "F1",
                                  "CV-Acc (train)", "AUC"]}, na_rep="—")
                  .background_gradient(subset=["F1"], cmap="Greens"),
-            use_container_width=True, hide_index=True)
+            width="stretch", hide_index=True)
         st.caption("Paper reference (BME 2024, 10 subjects): "
                    f"KNN F1 ≈ {config.PAPER_REFERENCE['KNN_F1']}, "
                    f"AUC ≈ {config.PAPER_REFERENCE['KNN_AUC']}. "

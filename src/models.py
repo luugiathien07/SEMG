@@ -11,6 +11,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from sklearn.calibration import CalibratedClassifierCV
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.pipeline import Pipeline
@@ -35,8 +36,10 @@ def build_models() -> list[ModelSpec]:
             name="SVM",
             estimator=Pipeline([
                 ("scale", StandardScaler()),
-                ("clf", SVC(kernel="linear", C=1.0, probability=True,
-                            random_state=config.RANDOM_STATE)),
+                ("clf", CalibratedClassifierCV(
+                    SVC(kernel="linear", C=1.0,
+                        random_state=config.RANDOM_STATE),
+                    ensemble=False)),
             ]),
             feature_set="top3",
             supports_proba=True,
