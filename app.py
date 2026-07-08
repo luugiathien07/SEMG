@@ -36,6 +36,13 @@ st.markdown(
         background: #111111 !important;
         padding: 8px !important;
     }
+    [class*="st-key-predtable"] table {
+        font-size: 1.1rem !important;
+    }
+    [class*="st-key-predtable"] table th,
+    [class*="st-key-predtable"] table td {
+        padding: 0.5rem 0.75rem !important;
+    }
     </style>
     """,
     unsafe_allow_html=True,
@@ -331,7 +338,7 @@ with tab_predict:
         t = np.arange(len(x)) / config.FS
         step = max(1, len(x) // 20000)
         fig_p = px.line(x=t[::step], y=x[::step],
-                        labels={"x": "time (s)", "y": "amplitude"},
+                        labels={"x": "time (s)", "y": "amplitude (mV)"},
                         title=f"Tín hiệu vào — channel {p_sel_ch}")
         fig_p.update_traces(line=dict(width=1))
         chart(fig_p)
@@ -356,21 +363,30 @@ with tab_predict:
                 return f"color: {LABEL_COLORS['Normal']}; font-weight: bold"
             return ""
 
-        st.markdown("### Kết quả dự đoán của 4 mô hình")
-        st.dataframe(
-            pred_df.style
-                   .format({"P(Fatigue)": "{:.1%}"}, na_rep="—")
-                   .map(_color_pred, subset=pd.IndexSlice[:, ["Dự đoán"]]),
-            use_container_width=True, hide_index=True)
+        col_pred, col_feat = st.columns(2, gap="large")
 
-        n_agree = sum(1 for p in preds if p["pred"] == truth)
-        st.caption(f"{n_agree}/{len(preds)} mô hình dự đoán khớp nhãn thật "
-                   f"(**{label_name(truth)}**).")
+        with col_pred:
+            st.markdown("### Kết quả dự đoán của 4 mô hình")
+            with st.container(key="predtable_verdict"):
+                st.table(
+                    pred_df.style
+                           .format({"P(Fatigue)": "{:.1%}"}, na_rep="—")
+                           .map(_color_pred, subset=pd.IndexSlice[:, ["Dự đoán"]])
+                           .hide(axis="index"))
 
-        st.markdown("**14 đặc trưng của kênh này (đầu vào cho mô hình)**")
-        feats = fe.extract_channel_features(x)
-        fdf = pd.DataFrame({"feature": config.FEATURE_NAMES,
-                            "value": [feats[n] for n in config.FEATURE_NAMES]})
-        st.dataframe(fdf, use_container_width=True, hide_index=True)
+            n_agree = sum(1 for p in preds if p["pred"] == truth)
+            st.caption(f"{n_agree}/{len(preds)} mô hình dự đoán khớp nhãn thật "
+                       f"(**{label_name(truth)}**).")
+
+        with col_feat:
+            st.markdown("### 14 đặc trưng của kênh này")
+            feats = fe.extract_channel_features(x)
+            fdf = pd.DataFrame({"feature": config.FEATURE_NAMES,
+                                "value": [feats[n] for n in config.FEATURE_NAMES]})
+            with st.container(key="predtable_features"):
+                st.table(
+                    fdf.rename(columns={"feature": "Đặc trưng", "value": "Giá trị"})
+                       .style.format({"Giá trị": "{:.4g}"})
+                       .hide(axis="index"))
     else:
         st.info("Chọn file + kênh rồi bấm **🔮 Dự đoán** để xem kết quả.")
