@@ -284,15 +284,15 @@ df = out.feature_table
 df = df.assign(Class=df["label"].map(config.LABEL_NAMES))
 files = dl.list_files()
 
-st.title("🦾 EMG Muscle-Fatigue Classification — Demo")
+st.title("EMG Muscle-Fatigue Classification — Demo")
 st.caption("sEMG (64-channel, 2000 Hz) · 14 features/channel · mRMR + SVM/KNN/LDA/DecisionTree · "
            "leave-one-subject-out (test = subject "
            f"{config.TEST_SUBJECT})")
 
 (tab_overview, tab_signal, tab_features, tab_select, tab_classify,
  tab_predict) = st.tabs(
-    ["📊 Overview", "📈 Signal & PSD", "🎯 Features", "🏅 Feature Selection",
-     "🤖 Classification", "🔮 Predict / Inference"]
+    ["Overview", "Signal & PSD", "Features", "Feature Selection",
+     "Classification", "Predict / Inference"]
 )
 
 # --------------------------------------------------------------------------
@@ -504,36 +504,33 @@ with tab_classify:
 # --------------------------------------------------------------------------
 with tab_predict:
     st.subheader("Đưa tín hiệu vào → có mỏi hay không")
-    st.caption("Chọn một file + một kênh EMG, bấm Dự đoán: mỗi mô hình đã huấn "
-               "luyện sẽ trả lời Normal / Fatigue kèm xác suất P(Fatigue). "
-               "Nhãn thật (suy từ tên file) hiển thị để đối chiếu.")
+    st.caption("Chọn một file + một kênh EMG **của subject "
+               f"{config.TEST_SUBJECT} (tập test, mô hình chưa từng thấy)**, "
+               "bấm Dự đoán: mỗi mô hình đã huấn luyện sẽ trả lời Normal / "
+               "Fatigue kèm xác suất P(Fatigue). Nhãn thật (suy từ tên file) "
+               "hiển thị để đối chiếu. Chỉ dùng dữ liệu subject test vì đây "
+               "mới là phép thử công bằng cho khả năng tổng quát hoá — dữ "
+               "liệu subject train mô hình đã thấy trong lúc huấn luyện.")
 
-    p_files = dl.list_files()
+    p_files = [f for f in dl.list_files() if f.subject == config.TEST_SUBJECT]
     p_names = [f.name for f in p_files]
-    p_sel_file = st.selectbox("File", p_names, key="pred_file")
+    p_sel_file = st.selectbox("File (subject "
+                              f"{config.TEST_SUBJECT})", p_names, key="pred_file")
     p_info = next(f for f in p_files if f.name == p_sel_file)
 
     p_channels = load_signal(str(p_info.path))
     p_mask = dl.valid_channel_mask(p_channels)
     p_valid_idx = list(np.where(p_mask)[0])
 
-    # Honest note: was this subject in the training set or held out?
-    if p_info.subject == config.TEST_SUBJECT:
-        seen = (f"subject {p_info.subject} = **tập test (chưa từng thấy)** "
-                "→ dự đoán đáng tin hơn")
-    elif p_info.subject in config.TRAIN_SUBJECTS:
-        seen = (f"subject {p_info.subject} thuộc **tập train (mô hình đã thấy "
-                "dữ liệu tương tự)**")
-    else:
-        seen = f"subject {p_info.subject} không thuộc train/test"
     st.caption(f"Nhãn thật: **{label_name(p_info.label)}** · condition "
-               f"`{p_info.condition}` · {seen}")
+               f"`{p_info.condition}` · subject {p_info.subject} = **tập test "
+               "(chưa từng thấy)** → dự đoán đáng tin cậy")
 
     p_sel_ch = st.selectbox("Channel", p_valid_idx,
                             format_func=lambda i: f"Channel {i}",
                             key="pred_channel")
 
-    if st.button("🔮 Dự đoán", type="primary"):
+    if st.button("Dự đoán", type="primary"):
         x = p_channels[:, p_sel_ch]
 
         # Context waveform for the chosen channel.
@@ -589,4 +586,4 @@ with tab_predict:
                     unsafe_allow_html=True,
                 )
     else:
-        st.info("Chọn file + kênh rồi bấm **🔮 Dự đoán** để xem kết quả.")
+        st.info("Chọn file + kênh rồi bấm **Dự đoán** để xem kết quả.")
