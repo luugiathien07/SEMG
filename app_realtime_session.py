@@ -39,10 +39,13 @@ HOVERLABEL = dict(font=dict(size=20, color="white", family="Arial"),
                   bgcolor="#1E1E1E", bordercolor="#1E1E1E")
 
 
-def chart(fig, key: str | None = None, **kwargs) -> None:
+def chart(fig, target=st, key: str | None = None, **kwargs) -> None:
+    """Render a figure via `target` (the `st` module, or an `st.empty()`
+    placeholder — both expose `.plotly_chart`), applying shared hover styling.
+    """
     fig.update_layout(hoverlabel=HOVERLABEL, hovermode="closest")
     kwargs.setdefault("width", "stretch")
-    st.plotly_chart(fig, key=key, **kwargs)
+    target.plotly_chart(fig, key=key, **kwargs)
 
 
 @st.cache_data(show_spinner="Đang huấn luyện / tải mô hình…")
@@ -60,15 +63,14 @@ def get_valid_channels(subject: int):
     return sb.common_valid_channels(subject)
 
 
-st.title("🏥 Giám sát Mỏi cơ Near-Real-Time — Buổi tập ghép từ dữ liệu thật")
+st.title("🏥 Giám sát Mỏi cơ Near-Real-Time")
 st.caption(
-    "Bệnh nhân phục hồi chức năng chi trên · buổi tập được ghép từ các bản ghi "
-    "sEMG thật của cùng một đối tượng nghiên cứu ở nhiều mức %MVC (10→90%), "
-    "phát lại nén thời gian để mô phỏng một buổi tập liên tục từ lúc bắt đầu "
-    "đến khi cơ mỏi và sau mỏi."
+    "Buổi tập ghép từ các bản ghi sEMG thật của cùng một đối tượng nghiên cứu "
+    "ở nhiều mức %MVC (10→90%), phát lại nén thời gian để mô phỏng một buổi "
+    "tập liên tục từ lúc bắt đầu đến khi cơ mỏi và sau mỏi."
 )
 
-col_sel1, col_sel2, col_sel3 = st.columns(3)
+col_sel1, col_sel2, col_sel3, col_btn1, col_btn2 = st.columns([2, 2, 2, 1.4, 1])
 with col_sel1:
     muscle = st.selectbox(
         "Nhóm cơ", list(MUSCLE_OPTIONS.keys()),
@@ -87,10 +89,12 @@ with col_sel2:
     channel = st.selectbox("Kênh EMG", valid_channels, format_func=lambda i: f"Kênh {i}")
 with col_sel3:
     n_steps = st.slider("Số bước phát", min_value=30, max_value=60, value=50)
-
-col_btn1, col_btn2 = st.columns([1, 1])
-start = col_btn1.button("▶ Bắt đầu mô phỏng buổi tập", type="primary")
-reset = col_btn2.button("⟲ Reset")
+with col_btn1:
+    st.write("")
+    start = st.button("▶ Bắt đầu mô phỏng buổi tập", type="primary")
+with col_btn2:
+    st.write("")
+    reset = st.button("⟲ Reset")
 
 if "session_started" not in st.session_state:
     st.session_state["session_started"] = False
@@ -121,13 +125,17 @@ if start:
         fs=config.FS,
     )
 
-    ph_wave = st.empty()
-    ph_trend = st.empty()
-    col_g1, col_g2 = st.columns([1, 1])
+    col_chart1, col_chart2 = st.columns([1, 1])
+    ph_wave = col_chart1.empty()
+    ph_trend = col_chart2.empty()
+
+    col_g1, col_g2, col_g3 = st.columns([1, 1, 2])
     ph_phase = col_g1.empty()
     ph_badge = col_g2.empty()
-    ph_status = st.empty()
-    ph_table = st.empty()
+    ph_status = col_g3.empty()
+
+    ph_table_toggle = st.expander("Chi tiết P(Fatigue) theo từng model (giai đoạn hiện tại)", expanded=False)
+    ph_table = ph_table_toggle.empty()
 
     mvc_hist: list[int] = []
     rms_hist: list[float] = []
@@ -135,9 +143,8 @@ if start:
     seen_segments: set[int] = set()
 
     for step in steps:
-        with ph_wave.container():
-            st.markdown("### ① Tín hiệu thô vs. sau khử nhiễu — vị trí hiện tại")
-            chart(vc.build_waveform_figure(step.window_t, step.window_raw, step.window_processed), key=f"waveform_{step.step_idx}")
+        chart(vc.build_waveform_figure(step.window_t, step.window_raw, step.window_processed),
+              target=ph_wave, key=f"waveform_{step.step_idx}")
 
         seg_idx = step.segment_idx
         if seg_idx not in seen_segments:
@@ -147,9 +154,8 @@ if start:
             rms_hist.append(newly_seen.rms)
             mdf_hist.append(newly_seen.mdf)
 
-        with ph_trend.container():
-            st.markdown("### ② Xu hướng RMS & MDF theo giai đoạn (%MVC)")
-            chart(vc.build_trend_figure(mvc_hist, rms_hist, mdf_hist), key=f"trend_{step.step_idx}")
+        chart(vc.build_trend_figure(mvc_hist, rms_hist, mdf_hist),
+              target=ph_trend, key=f"trend_{step.step_idx}")
 
         current = assessments[seg_idx]
         ph_phase.metric("Giai đoạn hiện tại", f"{current.segment.mvc}% MVC",
@@ -157,8 +163,8 @@ if start:
 
         knn_pred = next(p for p in current.predictions if p["model"] == "KNN")
         status = "Mỏi" if knn_pred["pred"] == 1 else "Không mỏi"
-        with ph_badge.container():
-            chart(vc.build_status_badge(status, knn_pred["p_fatigue"]), key=f"badge_{step.step_idx}")
+        chart(vc.build_status_badge(status, knn_pred["p_fatigue"]),
+              target=ph_badge, key=f"badge_{step.step_idx}")
 
         if status == "Không mỏi":
             ph_status.success(f"Trạng thái (model KNN): {status}")
@@ -167,16 +173,14 @@ if start:
                 f"Trạng thái (model KNN): {status} — ⚠ Khuyến nghị: giảm cường độ "
                 "hoặc cho bệnh nhân nghỉ giữa hiệp.")
 
-        with ph_table.container():
-            st.markdown("#### P(Fatigue) theo từng model (giai đoạn hiện tại)")
-            st.table([
-                {
-                    "Model": p["model"],
-                    "Dự đoán": config.LABEL_NAMES[p["pred"]],
-                    "P(Fatigue)": f"{p['p_fatigue']:.1%}" if p["p_fatigue"] is not None else "—",
-                }
-                for p in current.predictions
-            ])
+        ph_table.table([
+            {
+                "Model": p["model"],
+                "Dự đoán": config.LABEL_NAMES[p["pred"]],
+                "P(Fatigue)": f"{p['p_fatigue']:.1%}" if p["p_fatigue"] is not None else "—",
+            }
+            for p in current.predictions
+        ])
 
         time.sleep(STEP_INTERVAL_SEC)
 

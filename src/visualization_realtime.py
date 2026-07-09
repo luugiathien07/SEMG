@@ -26,8 +26,9 @@ def build_waveform_figure(
     ))
     fig.update_layout(
         xaxis_title="time (s)", yaxis_title="amplitude",
-        title="Tín hiệu EMG — vị trí hiện tại trong buổi tập",
-        height=380,
+        title="① Tín hiệu EMG — vị trí hiện tại trong buổi tập",
+        height=280,
+        margin=dict(t=50, b=40, l=50, r=20),
         legend=dict(orientation="h", yanchor="bottom", y=1.02,
                     xanchor="right", x=1),
     )
@@ -54,8 +55,9 @@ def build_trend_figure(
         xaxis_title="%MVC của giai đoạn",
         yaxis=dict(title="RMS"),
         yaxis2=dict(title="MDF (Hz)", overlaying="y", side="right"),
-        title="RMS & Median Frequency theo giai đoạn (%MVC)",
-        height=380,
+        title="② RMS & Median Frequency theo giai đoạn (%MVC)",
+        height=280,
+        margin=dict(t=50, b=40, l=50, r=50),
         legend=dict(orientation="h", yanchor="bottom", y=1.02,
                     xanchor="right", x=1),
     )
@@ -75,8 +77,8 @@ def build_status_badge(status: str, p_fatigue: float | None) -> go.Figure:
         mode="number",
         value=1,
         number={"font": {"size": 1, "color": color}},
-        title={"text": f"{icon} Trạng thái: {status}{pct_text}",
-               "font": {"size": 28, "color": color}},
+        title={"text": f"{icon} {status}{pct_text}",
+               "font": {"size": 22, "color": color}},
     ))
-    fig.update_layout(height=200)
+    fig.update_layout(height=130, margin=dict(t=10, b=10, l=10, r=10))
     return fig
