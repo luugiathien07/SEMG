@@ -32,7 +32,7 @@ MUSCLE_OPTIONS = {
     "Cơ delta vai (Deltoid)": False,
 }
 SUBJECT = config.TEST_SUBJECT
-STEP_INTERVAL_SEC = 1.0
+STEP_INTERVAL_SEC = 0.3
 DISPLAY_WINDOW_SEC = 1.5
 ENVELOPE_WINDOW_SEC = 0.05
 HOVERLABEL = dict(font=dict(size=20, color="white", family="Arial"),
@@ -88,7 +88,11 @@ valid_channels = get_valid_channels(SUBJECT)
 with col_sel2:
     channel = st.selectbox("Kênh EMG", valid_channels, format_func=lambda i: f"Kênh {i}")
 with col_sel3:
-    n_steps = st.slider("Số bước phát", min_value=30, max_value=60, value=50)
+    n_steps = st.slider(
+        "Số bước phát", min_value=60, max_value=300, value=180,
+        help="Càng nhiều bước, mỗi bước càng nhích ít trên tín hiệu gốc "
+             "→ hình ảnh chạy mượt/liên tục hơn.",
+    )
 with col_btn1:
     st.write("")
     start = st.button("▶ Bắt đầu mô phỏng buổi tập", type="primary")
