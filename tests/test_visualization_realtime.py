@@ -28,6 +28,19 @@ class TestBuildWaveformFigure:
         assert "Tín hiệu thô" in names
         assert "Sau khử nhiễu (rectify + envelope)" in names
 
+    def test_no_y_range_by_default(self):
+        t, raw, processed = _fake_window()
+        fig = build_waveform_figure(t, raw, processed)
+        assert fig.layout.yaxis.range is None
+
+    def test_y_range_sets_fixed_axis_bounds(self):
+        """A fixed y_range must be applied verbatim so the chart doesn't
+        auto-rescale (and visually jump/flicker) between frames as signal
+        amplitude changes across the session."""
+        t, raw, processed = _fake_window()
+        fig = build_waveform_figure(t, raw, processed, y_range=(-1.5, 1.5))
+        assert tuple(fig.layout.yaxis.range) == (-1.5, 1.5)
+
 
 class TestBuildTrendFigure:
     def test_returns_go_figure(self):

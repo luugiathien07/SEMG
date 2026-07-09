@@ -46,11 +46,18 @@ def build_playback_steps(
     display_window_sec: float,
     envelope_window_sec: float,
     fs: int,
+    max_display_points: int | None = None,
 ) -> list[PlaybackStep]:
     """Scrub through `signal` at `n_steps` evenly-spaced positions, each
     carrying a `display_window_sec`-long raw+processed window for the
     animated waveform chart. Does NOT compute fatigue status — that comes
     from `assess_segments`, using whole segments, not these short windows.
+
+    `max_display_points`, when given, decimates each window's arrays down to
+    roughly that many points (same `[::step]` pattern as app.py's Signal &
+    PSD tab) — a wide display window at full sample rate is a lot of points
+    to re-serialize every animation frame, and that overhead is itself a
+    source of choppiness independent of how much consecutive windows overlap.
     """
     display_window_samples = int(display_window_sec * fs)
     envelope_samples = max(1, int(envelope_window_sec * fs))
@@ -61,7 +68,7 @@ def build_playback_steps(
         )
 
     max_start = len(signal) - display_window_samples
-    t_window = np.arange(display_window_samples) / fs
+    local_offsets = np.arange(display_window_samples) / fs
 
     steps: list[PlaybackStep] = []
     for i in range(n_steps):
@@ -69,10 +76,21 @@ def build_playback_steps(
         sample_pos = int(round(frac * max_start))
         window_raw = signal[sample_pos:sample_pos + display_window_samples]
         window_processed = rectify_envelope(window_raw, envelope_samples)
+        # Global elapsed time within the whole session (starts at 0 for the
+        # first step, then grows monotonically) instead of a fixed local
+        # window reused every step, so the waveform chart's x-axis reads
+        # like a real-time monitor's growing time axis rather than
+        # resetting every frame.
+        window_t = sample_pos / fs + local_offsets
+        if max_display_points is not None and len(window_t) > max_display_points:
+            dec_step = max(1, len(window_t) // max_display_points)
+            window_t = window_t[::dec_step]
+            window_raw = window_raw[::dec_step]
+            window_processed = window_processed[::dec_step]
         steps.append(PlaybackStep(
             step_idx=i, sample_pos=sample_pos,
             segment_idx=_segment_idx_for(sample_pos, segments),
-            window_t=t_window, window_raw=window_raw,
+            window_t=window_t, window_raw=window_raw,
             window_processed=window_processed,
         ))
     return steps

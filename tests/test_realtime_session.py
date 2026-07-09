@@ -57,6 +57,54 @@ class TestBuildPlaybackSteps:
             assert len(s.window_processed) == 1000
             assert len(s.window_t) == 1000
 
+    def test_window_t_starts_at_zero_and_is_global_elapsed_time(self):
+        """window_t must reflect real elapsed time *within the whole
+        concatenated session* (starting at 0 for the very first step), not a
+        fixed local 0..display_window_sec window reused every step — that's
+        what lets the waveform chart's x-axis grow across the session like a
+        real-time monitor instead of resetting every frame."""
+        rng = np.random.default_rng(3)
+        signal = rng.standard_normal(6000) * 0.1
+        segments = _fake_segments()
+        steps = build_playback_steps(
+            signal, segments, n_steps=5,
+            display_window_sec=0.5, envelope_window_sec=0.05, fs=2000)
+
+        assert steps[0].window_t[0] == 0.0
+
+        for s in steps:
+            expected_start = s.sample_pos / 2000
+            assert abs(s.window_t[0] - expected_start) < 1e-9
+            assert abs(s.window_t[-1] - s.window_t[0] - (len(s.window_t) - 1) / 2000) < 1e-9
+
+        starts = [s.window_t[0] for s in steps]
+        assert starts == sorted(starts)
+
+    def test_max_display_points_none_keeps_full_resolution(self):
+        rng = np.random.default_rng(3)
+        signal = rng.standard_normal(6000) * 0.1
+        segments = _fake_segments()
+        steps = build_playback_steps(
+            signal, segments, n_steps=5,
+            display_window_sec=0.5, envelope_window_sec=0.05, fs=2000,
+            max_display_points=None)
+        assert len(steps[0].window_raw) == 1000
+
+    def test_max_display_points_decimates_window_arrays(self):
+        rng = np.random.default_rng(3)
+        signal = rng.standard_normal(6000) * 0.1
+        segments = _fake_segments()
+        steps = build_playback_steps(
+            signal, segments, n_steps=5,
+            display_window_sec=0.5, envelope_window_sec=0.05, fs=2000,
+            max_display_points=100)
+        for s in steps:
+            assert len(s.window_raw) <= 100
+            assert len(s.window_processed) == len(s.window_raw)
+            assert len(s.window_t) == len(s.window_raw)
+            # still monotonically increasing after decimation
+            assert np.all(np.diff(s.window_t) > 0)
+
     def test_segment_idx_nondecreasing_and_in_range(self):
         rng = np.random.default_rng(3)
         signal = rng.standard_normal(6000) * 0.1

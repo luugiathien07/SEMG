@@ -11,8 +11,17 @@ import plotly.graph_objects as go
 
 def build_waveform_figure(
     t: np.ndarray, raw_x: np.ndarray, processed_x: np.ndarray,
+    y_range: tuple[float, float] | None = None,
 ) -> go.Figure:
-    """Faint raw scrub window vs. bold rectified+enveloped window."""
+    """Faint raw scrub window vs. bold rectified+enveloped window.
+
+    `t` is expected to be the *global* elapsed session time of this window
+    (grows across successive calls, not reset to 0 each time), so the x-axis
+    reads like a real-time monitor sliding forward. `y_range`, when given, is
+    applied verbatim so the y-axis stays fixed instead of auto-rescaling to
+    each window's local amplitude — auto-rescaling across very different
+    %MVC segments is what made consecutive frames look like they "jump".
+    """
     fig = go.Figure()
     fig.add_trace(go.Scatter(
         x=t, y=raw_x, mode="lines",
@@ -32,6 +41,8 @@ def build_waveform_figure(
         legend=dict(orientation="h", yanchor="bottom", y=1.02,
                     xanchor="right", x=1),
     )
+    if y_range is not None:
+        fig.update_yaxes(range=list(y_range))
     return fig
 
 
