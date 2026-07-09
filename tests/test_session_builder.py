@@ -2,10 +2,11 @@
 from pathlib import Path
 
 import numpy as np
+import pytest
 
 from src import data_loader as dl
 from src.session_builder import (
-    parse_mvc, list_ordered_segments, common_valid_channels,
+    parse_mvc, list_ordered_segments, common_valid_channels, build_session_signal,
 )
 
 
@@ -59,3 +60,28 @@ class TestCommonValidChannels:
         monkeypatch.setattr(dl, "load_channels", lambda path: channels_by_file[path])
         result = common_valid_channels(9)
         assert result == [0]
+
+
+class TestBuildSessionSignal:
+    def test_concatenates_in_mvc_order_with_segment_bounds(self, monkeypatch):
+        files = [_fake_file(9, "20", 0), _fake_file(9, "10", 0)]
+        monkeypatch.setattr(dl, "list_files", lambda: files)
+        channels_by_file = {
+            files[0].path: np.array([[10.0], [10.0], [10.0]]),  # "20", 3 samples
+            files[1].path: np.array([[1.0], [1.0]]),            # "10", 2 samples
+        }
+        monkeypatch.setattr(dl, "load_channels", lambda path: channels_by_file[path])
+
+        signal, segments = build_session_signal(9, channel=0)
+
+        np.testing.assert_allclose(signal, [1.0, 1.0, 10.0, 10.0, 10.0])
+        assert [s.file.condition for s in segments] == ["10", "20"]
+        assert segments[0].mvc == 10 and segments[1].mvc == 20
+        assert segments[0].start_sample == 0 and segments[0].end_sample == 2
+        assert segments[1].start_sample == 2 and segments[1].end_sample == 5
+
+    def test_raises_if_fewer_than_two_files(self, monkeypatch):
+        files = [_fake_file(9, "10", 0)]
+        monkeypatch.setattr(dl, "list_files", lambda: files)
+        with pytest.raises(ValueError):
+            build_session_signal(9, channel=0)
