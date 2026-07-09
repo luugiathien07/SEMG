@@ -22,6 +22,7 @@ from src import data_loader as dl  # noqa: E402
 from src import feature_extraction as fe  # noqa: E402
 from src import inference as inf  # noqa: E402
 from src import pipeline as pl   # noqa: E402
+from src import visualization as viz  # noqa: E402
 
 st.set_page_config(page_title="EMG Fatigue Demo", layout="wide")
 
@@ -532,15 +533,33 @@ with tab_predict:
 
     if st.button("Dự đoán", type="primary"):
         x = p_channels[:, p_sel_ch]
-
-        # Context waveform for the chosen channel.
+        feats = fe.extract_channel_features(x)
         t = np.arange(len(x)) / config.FS
         step = max(1, len(x) // 20000)
-        fig_p = px.line(x=t[::step], y=x[::step],
-                        labels={"x": "time (s)", "y": "amplitude (mV)"},
-                        title=f"Tín hiệu vào — channel {p_sel_ch}")
-        fig_p.update_traces(line=dict(width=1))
-        chart(fig_p)
+        t_dec, x_dec = t[::step], x[::step]
+
+        # ── ① Tín hiệu EMG & đặc trưng miền thời gian ──────────
+        st.markdown("---")
+        st.markdown("### ① Tín hiệu EMG · Đặc trưng miền thời gian")
+        st.caption("Tín hiệu thô của kênh EMG đã chọn. Các đường chú thích "
+                   "cho thấy vị trí của Mean, dải ±1 STD, và điểm Max / Min "
+                   "— 4 trong 8 đặc trưng miền thời gian.")
+        chart(viz.build_time_domain_figure(t_dec, x_dec, feats, p_sel_ch))
+
+        # ── ② Phổ công suất & đặc trưng miền tần số ─────────────
+        st.markdown("### ② Phổ công suất (PSD) · Đặc trưng miền tần số")
+        st.caption("Phổ công suất (periodogram) cho thấy năng lượng tín hiệu "
+                   "phân bố theo tần số. MDF (tần số trung vị) và MNF (tần số "
+                   "trung bình) là hai chỉ dấu kinh điển — cả hai đều **giảm** "
+                   "khi cơ mỏi.")
+        f_psd, pxx = fe.channel_psd(x)
+        chart(viz.build_psd_figure(f_psd, pxx, feats))
+
+        # ── ③ Vector đặc trưng → Dự đoán ────────────────────────
+        st.markdown("### ③ Vector 14 đặc trưng → Kết quả dự đoán")
+        st.caption("14 đặc trưng (8 miền thời gian + 6 miền tần số) được "
+                   "đưa vào các mô hình đã huấn luyện để phân loại "
+                   "Normal / Fatigue.")
 
         preds = inf.predict_channel(x, out.results)
         truth = int(p_info.label)
@@ -562,10 +581,18 @@ with tab_predict:
                 return f"color: {LABEL_COLORS['Normal']}; font-weight: bold"
             return ""
 
-        col_pred, col_feat = st.columns(2, gap="large")
+        col_feat, col_pred = st.columns(2, gap="large")
+
+        with col_feat:
+            st.markdown("#### 14 đặc trưng của kênh này")
+            with st.container(key="predtable_features"):
+                st.markdown(
+                    _build_feature_tooltip_table(feats),
+                    unsafe_allow_html=True,
+                )
 
         with col_pred:
-            st.markdown("### Kết quả dự đoán của 4 mô hình")
+            st.markdown("#### Kết quả dự đoán của 4 mô hình")
             with st.container(key="predtable_verdict"):
                 st.table(
                     pred_df.style
@@ -576,14 +603,5 @@ with tab_predict:
             n_agree = sum(1 for p in preds if p["pred"] == truth)
             st.caption(f"{n_agree}/{len(preds)} mô hình dự đoán khớp nhãn thật "
                        f"(**{label_name(truth)}**).")
-
-        with col_feat:
-            st.markdown("### 14 đặc trưng của kênh này")
-            feats = fe.extract_channel_features(x)
-            with st.container(key="predtable_features"):
-                st.markdown(
-                    _build_feature_tooltip_table(feats),
-                    unsafe_allow_html=True,
-                )
     else:
         st.info("Chọn file + kênh rồi bấm **Dự đoán** để xem kết quả.")
