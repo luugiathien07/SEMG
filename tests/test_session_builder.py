@@ -6,7 +6,8 @@ import pytest
 
 from src import data_loader as dl
 from src.session_builder import (
-    parse_mvc, list_ordered_segments, common_valid_channels, build_session_signal,
+    parse_mvc, is_post_fatigue, list_ordered_segments, common_valid_channels,
+    build_session_signal,
 )
 
 
@@ -28,18 +29,35 @@ class TestParseMvc:
         assert parse_mvc("fatigue_70") == 70
 
 
+class TestIsPostFatigue:
+    def test_ap_fatigue_condition_is_post_fatigue(self):
+        assert is_post_fatigue("10_ap_fatigue") is True
+
+    def test_fatigue_prefix_condition_is_not_post_fatigue(self):
+        # "fatigue_70" is the fatiguing bout itself (chronologically part of
+        # the ascending-intensity ramp), not a post-fatigue retest.
+        assert is_post_fatigue("fatigue_70") is False
+
+    def test_plain_number_condition_is_not_post_fatigue(self):
+        assert is_post_fatigue("60") is False
+
+
 class TestListOrderedSegments:
-    def test_sorts_by_mvc_then_condition(self, monkeypatch):
+    def test_sorts_ascending_mvc_with_post_fatigue_retest_last(self, monkeypatch):
         files = [
             _fake_file(9, "60", 0),
             _fake_file(9, "10_ap_fatigue", 0),
             _fake_file(9, "10", 0),
             _fake_file(9, "fatigue_70", 1),
+            _fake_file(9, "90", 1),
         ]
         monkeypatch.setattr(dl, "list_files", lambda: files)
         ordered = list_ordered_segments(9)
+        # "10_ap_fatigue" is a post-fatigue retest — measured chronologically
+        # AFTER the fatiguing bout and the 90% MVC peak, despite its low
+        # %MVC number, so it must sort last, not second.
         assert [f.condition for f in ordered] == [
-            "10", "10_ap_fatigue", "60", "fatigue_70"]
+            "10", "60", "fatigue_70", "90", "10_ap_fatigue"]
 
     def test_filters_to_subject(self, monkeypatch):
         files = [_fake_file(9, "10", 0), _fake_file(5, "20", 0)]

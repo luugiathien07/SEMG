@@ -31,19 +31,30 @@ class TestBuildWaveformFigure:
 
 class TestBuildTrendFigure:
     def test_returns_go_figure(self):
-        fig = build_trend_figure([10, 20, 40], [0.1, 0.2, 0.3], [50.0, 45.0, 40.0])
+        fig = build_trend_figure(["10%", "20%", "40%"], [0.1, 0.2, 0.3], [50.0, 45.0, 40.0])
         assert isinstance(fig, go.Figure)
 
     def test_contains_rms_and_mdf_traces(self):
-        fig = build_trend_figure([10, 20, 40], [0.1, 0.2, 0.3], [50.0, 45.0, 40.0])
+        fig = build_trend_figure(["10%", "20%", "40%"], [0.1, 0.2, 0.3], [50.0, 45.0, 40.0])
         names = [tr.name for tr in fig.data]
         assert "RMS" in names
         assert "MDF (Hz)" in names
 
     def test_mdf_trace_uses_secondary_axis(self):
-        fig = build_trend_figure([10, 20, 40], [0.1, 0.2, 0.3], [50.0, 45.0, 40.0])
+        fig = build_trend_figure(["10%", "20%", "40%"], [0.1, 0.2, 0.3], [50.0, 45.0, 40.0])
         mdf_trace = next(tr for tr in fig.data if tr.name == "MDF (Hz)")
         assert mdf_trace.yaxis == "y2"
+
+    def test_xaxis_is_categorical_so_repeated_labels_dont_reorder(self):
+        # A post-fatigue retest segment can carry the same %MVC label as an
+        # earlier segment (e.g. "10%" at the start, "10% (sau mỏi)" at the
+        # end) — the x-axis must be categorical (plot order = call order),
+        # not a numeric axis that would sort/collide same-valued points.
+        labels = ["10%", "20%", "40%", "60%", "70%", "90%", "10% (sau mỏi)"]
+        fig = build_trend_figure(labels, [0.1] * 7, [50.0] * 7)
+        assert fig.layout.xaxis.type == "category"
+        rms_trace = next(tr for tr in fig.data if tr.name == "RMS")
+        assert list(rms_trace.x) == labels
 
 
 class TestBuildStatusBadge:

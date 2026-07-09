@@ -102,9 +102,14 @@ if reset:
     st.session_state["session_started"] = False
     st.rerun()
 
+def segment_label(seg) -> str:
+    suffix = " (sau mỏi)" if sb.is_post_fatigue(seg.file.condition) else ""
+    return f"{seg.mvc}%{suffix}"
+
+
 signal, segments = get_session(SUBJECT, channel)
-mvc_sequence = " → ".join(f"{s.mvc}%" for s in segments)
-st.caption(f"Thứ tự giai đoạn (%MVC): {mvc_sequence}")
+mvc_sequence = " → ".join(segment_label(s) for s in segments)
+st.caption(f"Thứ tự giai đoạn: {mvc_sequence}")
 
 if not st.session_state["session_started"] and not start:
     st.caption("🔍 Đang hiển thị dữ liệu xem trước — nhấn "
@@ -137,7 +142,7 @@ if start:
     ph_table_toggle = st.expander("Chi tiết P(Fatigue) theo từng model (giai đoạn hiện tại)", expanded=False)
     ph_table = ph_table_toggle.empty()
 
-    mvc_hist: list[int] = []
+    label_hist: list[str] = []
     rms_hist: list[float] = []
     mdf_hist: list[float] = []
     seen_segments: set[int] = set()
@@ -150,15 +155,15 @@ if start:
         if seg_idx not in seen_segments:
             seen_segments.add(seg_idx)
             newly_seen = assessments[seg_idx]
-            mvc_hist.append(newly_seen.segment.mvc)
+            label_hist.append(segment_label(newly_seen.segment))
             rms_hist.append(newly_seen.rms)
             mdf_hist.append(newly_seen.mdf)
 
-        chart(vc.build_trend_figure(mvc_hist, rms_hist, mdf_hist),
+        chart(vc.build_trend_figure(label_hist, rms_hist, mdf_hist),
               target=ph_trend, key=f"trend_{step.step_idx}")
 
         current = assessments[seg_idx]
-        ph_phase.metric("Giai đoạn hiện tại", f"{current.segment.mvc}% MVC",
+        ph_phase.metric("Giai đoạn hiện tại", segment_label(current.segment),
                          help=f"File: {current.segment.file.condition}")
 
         knn_pred = next(p for p in current.predictions if p["model"] == "KNN")

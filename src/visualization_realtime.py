@@ -36,26 +36,33 @@ def build_waveform_figure(
 
 
 def build_trend_figure(
-    mvc_values: list[int], rms_values: list[float], mdf_values: list[float],
+    x_labels: list[str], rms_values: list[float], mdf_values: list[float],
 ) -> go.Figure:
-    """RMS (left axis) and MDF (right axis) across the segments visited so far,
-    plotted against %MVC of each segment."""
+    """RMS (left axis) and MDF (right axis) across the segments visited so
+    far, plotted in chronological session order (`x_labels`, e.g. "10%",
+    "20%", ..., "10% (sau mỏi)").
+
+    Uses a categorical x-axis (not raw %MVC numbers): a post-fatigue retest
+    segment can share the same %MVC as an earlier segment (e.g. "10%" at the
+    start vs. "10% (sau mỏi)" at the end), so plotting against the numeric
+    %MVC value would snap the line backward instead of continuing forward.
+    """
     fig = go.Figure()
     fig.add_trace(go.Scatter(
-        x=mvc_values, y=rms_values, mode="lines+markers",
+        x=x_labels, y=rms_values, mode="lines+markers",
         line=dict(color="#E74C3C", width=2),
         name="RMS",
     ))
     fig.add_trace(go.Scatter(
-        x=mvc_values, y=mdf_values, mode="lines+markers",
+        x=x_labels, y=mdf_values, mode="lines+markers",
         line=dict(color="#3498DB", width=2),
         name="MDF (Hz)", yaxis="y2",
     ))
     fig.update_layout(
-        xaxis_title="%MVC của giai đoạn",
+        xaxis=dict(title="Giai đoạn", type="category"),
         yaxis=dict(title="RMS"),
         yaxis2=dict(title="MDF (Hz)", overlaying="y", side="right"),
-        title="② RMS & Median Frequency theo giai đoạn (%MVC)",
+        title="② RMS & Median Frequency theo giai đoạn",
         height=280,
         margin=dict(t=50, b=40, l=50, r=50),
         legend=dict(orientation="h", yanchor="bottom", y=1.02,
