@@ -143,7 +143,7 @@ summary{cursor:pointer;color:#8b949e;font-size:12px;user-select:none}
 </div>
 
 <div class="cards">
-  <div class="card"><div class="cl">Giai đoạn hiện tại</div><div class="cv" id="seg">—</div></div>
+  <div class="card"><div class="cl">Mức độ MVC</div><div class="cv" id="seg">—</div></div>
   <div class="card"><div class="cl">Trạng thái</div><div class="cv" id="st">—</div></div>
 </div>
 <div class="reco" id="reco">⚠ Khuyến nghị: giảm cường độ hoặc cho bệnh nhân nghỉ giữa hiệp</div>

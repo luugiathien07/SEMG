@@ -48,7 +48,7 @@ def get_valid_channels(subject: int):
     return sb.common_valid_channels(subject)
 
 
-st.title("🏥 Giám sát Mỏi cơ Near-Real-Time")
+st.title("Giám sát Mỏi cơ")
 
 col_sel1, col_sel2, col_btn1, col_btn2 = st.columns([2, 2, 1.4, 1])
 with col_sel1:
