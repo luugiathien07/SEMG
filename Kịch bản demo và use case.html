@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Đề xuất Demo: Nhận diện Mỏi Cơ qua sEMG</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root{
+    --teal-900:#0b3b3c; --teal-700:#0f766e; --teal-600:#0d9488; --cyan-600:#0891b2;
+    --bg:#f6f9f9; --card:#ffffff; --ink:#0f172a; --ink-soft:#475569; --line:#e2e8f0;
+    --green:#16a34a; --amber:#d97706; --red:#dc2626;
+    --green-bg:#ecfdf5; --amber-bg:#fffbeb; --red-bg:#fef2f2;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:'Segoe UI',-apple-system,BlinkMacSystemFont,Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--ink);line-height:1.65;}
+  .container{max-width:1080px;margin:0 auto;padding:0 24px;}
+
+  /* NAV */
+  nav{position:sticky;top:0;z-index:50;background:rgba(255,255,255,0.94);backdrop-filter:blur(6px);border-bottom:1px solid var(--line);}
+  nav .container{display:flex;align-items:center;gap:22px;padding:12px 24px;overflow-x:auto;white-space:nowrap;}
+  nav .brand{font-weight:700;color:var(--teal-700);font-size:15px;margin-right:8px;flex:0 0 auto;}
+  nav a{color:var(--ink-soft);text-decoration:none;font-size:13.5px;font-weight:500;flex:0 0 auto;}
+  nav a:hover{color:var(--teal-700);}
+
+  /* HERO */
+  header.hero{background:linear-gradient(135deg,var(--teal-900),var(--teal-700) 60%,var(--cyan-600));color:#fff;padding:56px 0 46px;}
+  .eyebrow{display:inline-block;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);padding:4px 12px;border-radius:20px;font-size:12.5px;letter-spacing:.04em;margin-bottom:16px;}
+  header.hero h1{font-size:32px;margin:0 0 12px;line-height:1.3;max-width:820px;}
+  header.hero p.sub{font-size:16px;color:#d9f0ee;max-width:680px;margin:0 0 22px;}
+  .hero-meta{display:flex;gap:28px;flex-wrap:wrap;font-size:13px;color:#cfeceA;border-top:1px solid rgba(255,255,255,0.2);padding-top:16px;margin-top:8px;}
+  .hero-meta b{color:#fff;display:block;font-size:13.5px;margin-bottom:2px;}
+
+  section{padding:46px 0;}
+  section.alt{background:#eef4f4;}
+  h2.h-title{font-size:22px;margin:0 0 6px;color:var(--teal-900);}
+  p.h-lede{color:var(--ink-soft);margin:0 0 28px;max-width:760px;font-size:14.5px;}
+  .kicker{font-size:12px;font-weight:700;color:var(--teal-700);letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px;}
+
+  p{font-size:15px;color:#243042;}
+  .prose p{margin:0 0 14px;}
+  .prose{max-width:800px;}
+
+  /* CARDS */
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px 24px;box-shadow:0 1px 2px rgba(15,23,42,0.04);}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:22px;}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  @media(max-width:760px){.grid3{grid-template-columns:1fr;}.grid2{grid-template-columns:1fr;}}
+  .stat-card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:18px 20px;}
+  .stat-card .num{font-size:26px;font-weight:800;color:var(--teal-700);}
+  .stat-card .lbl{font-size:12.5px;color:var(--ink-soft);margin-top:4px;}
+
+  /* RESEARCH SOURCE BOX */
+  .paper-box{border-left:4px solid var(--teal-600);background:#fff;border-radius:0 12px 12px 0;padding:18px 22px;margin:18px 0;}
+  .paper-box .title{font-weight:700;font-size:14.5px;color:var(--teal-900);}
+  .paper-box .meta{font-size:12.5px;color:var(--ink-soft);margin-top:4px;}
+  .tag-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;}
+  .tag{font-size:11.5px;background:var(--teal-900);color:#fff;padding:4px 10px;border-radius:20px;opacity:.85;}
+
+  /* PIPELINE */
+  .pipeline{display:flex;align-items:stretch;gap:0;overflow-x:auto;padding:8px 0 4px;margin-top:24px;}
+  .pipe-step{flex:1 1 0;min-width:150px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px;position:relative;text-align:center;}
+  .pipe-step .ico{font-size:22px;margin-bottom:8px;}
+  .pipe-step .t{font-weight:700;font-size:13px;color:var(--teal-900);}
+  .pipe-step .d{font-size:12px;color:var(--ink-soft);margin-top:5px;}
+  .pipe-arrow{display:flex;align-items:center;justify-content:center;width:34px;color:var(--teal-600);font-size:20px;flex:0 0 auto;}
+
+  /* USECASE TABS */
+  .uc-block{margin-top:10px;}
+  .uc-badge{display:inline-flex;align-items:center;gap:8px;background:var(--teal-900);color:#fff;font-size:12px;font-weight:700;padding:6px 14px;border-radius:20px;margin-bottom:14px;}
+
+  /* ---- MODERN DEMO PANEL (dark navy/indigo, not green) ---- */
+  :root{
+    --demo-bg-1:#0a0e1a; --demo-bg-2:#111730; --demo-panel:#131a30; --demo-line:#232b4a;
+    --demo-ink:#e6e9f5; --demo-ink-soft:#8b93ad; --demo-accent:#818cf8; --demo-accent-2:#22d3ee;
+  }
+  .demo-shell{background:radial-gradient(circle at 15% 0%,#161d3a 0%,var(--demo-bg-1) 55%);border:1px solid var(--demo-line);border-radius:20px;padding:20px;color:var(--demo-ink);box-shadow:0 20px 40px -20px rgba(2,6,23,0.5);}
+  .demo-toolbar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px;}
+  .demo-toolbar .left{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+  select, button.demo-btn{font-family:inherit;font-size:13px;border-radius:9px;border:1px solid var(--demo-line);background:#0f1428;color:var(--demo-ink);padding:8px 12px;}
+  button.demo-btn{background:linear-gradient(135deg,var(--demo-accent),var(--demo-accent-2));border:none;color:#0a0e1a;font-weight:700;cursor:pointer;}
+  button.demo-btn:hover{filter:brightness(1.08);}
+  button.demo-btn:disabled{opacity:.5;cursor:not-allowed;}
+  .demo-grid{display:grid;grid-template-columns:1.55fr 1fr;gap:16px;}
+  @media(max-width:900px){.demo-grid{grid-template-columns:1fr;}}
+  .panel{background:var(--demo-panel);border:1px solid var(--demo-line);border-radius:14px;padding:14px 16px;}
+  .panel h4{margin:0 0 10px;font-size:12.5px;text-transform:uppercase;letter-spacing:.05em;color:#a5b4fc;font-weight:700;}
+  .chart-wrap{position:relative;height:190px;}
+  .chart-wrap.tall{height:220px;}
+  .metric-row{display:flex;gap:12px;margin-bottom:12px;}
+  .metric{flex:1;background:#0f1428;border:1px solid var(--demo-line);border-radius:10px;padding:10px 12px;}
+  .metric .v{font-size:19px;font-weight:800;color:var(--demo-ink);}
+  .metric .l{font-size:11px;color:var(--demo-ink-soft);margin-top:2px;}
+  .metric .arrow-up{color:#fb7185;} .metric .arrow-down{color:#34d399;}
+
+  .preview-tag{display:inline-flex;align-items:center;gap:8px;background:rgba(129,140,248,0.12);border:1px solid rgba(129,140,248,0.35);color:#c7d2fe;font-size:12px;font-weight:600;padding:6px 12px;border-radius:20px;margin-bottom:14px;}
+
+  .status-badge{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:10px;font-weight:700;font-size:13px;width:100%;justify-content:center;}
+  .status-ok{background:var(--green-bg);color:var(--green);}
+  .status-warn{background:var(--amber-bg);color:var(--amber);}
+  .status-danger{background:var(--red-bg);color:var(--red);}
+
+  .alert-bar{margin-top:12px;border-radius:10px;padding:10px 14px;font-size:13px;font-weight:600;display:none;}
+  .alert-bar.show{display:block;}
+  .alert-warn{background:var(--amber-bg);color:#92400e;border:1px solid #fde68a;}
+  .alert-danger{background:var(--red-bg);color:#991b1b;border:1px solid #fecaca;}
+
+  .gauge-wrap{display:flex;flex-direction:column;align-items:center;}
+  .gauge-score{font-size:30px;font-weight:800;margin-top:-52px;color:#fff;}
+  .gauge-caption{font-size:11.5px;color:var(--demo-ink-soft);margin-top:2px;}
+
+  table.session-table{width:100%;border-collapse:collapse;font-size:12.5px;}
+  table.session-table th,table.session-table td{padding:8px 8px;text-align:left;border-bottom:1px solid var(--demo-line);}
+  table.session-table th{color:#a5b4fc;font-weight:600;text-transform:uppercase;font-size:10.5px;letter-spacing:.03em;}
+  .summary-card{background:linear-gradient(135deg,#161d3a,#0f1428);border:1px solid var(--demo-line);border-radius:12px;padding:16px;margin-top:14px;}
+  .summary-card .big{font-size:22px;font-weight:800;color:#34d399;}
+  .summary-card p{color:#cbd3ea;font-size:13px;margin:6px 0 0;}
+
+  footer{padding:34px 0;text-align:center;color:#94a3b8;font-size:12.5px;border-top:1px solid var(--line);}
+
+  .disclaimer{font-size:11.5px;color:var(--demo-ink-soft);background:#0f1428;border:1px dashed var(--demo-line);border-radius:8px;padding:8px 12px;margin-top:14px;}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="container">
+    <span class="brand">sEMG Fatigue Demo</span>
+    <a href="#overview">Tổng quan</a>
+    <a href="#research">Cơ sở nghiên cứu</a>
+    <a href="#pipeline">Kiến trúc</a>
+    <a href="#uc1">Usecase 1</a>
+    <a href="#uc2">Usecase 2</a>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="container">
+    <span class="eyebrow">Đề xuất nội bộ · Nhóm nghiên cứu sEMG</span>
+    <h1>Demo hệ thống nhận diện mỏi cơ theo thời gian thực từ tín hiệu sEMG</h1>
+    <p class="sub">Chuyển hoá thuật toán xử lý tín hiệu &amp; nhận diện mỏi cơ đã nghiên cứu thành một demo trực quan, hướng đến khách hàng bệnh viện – khoa Phục hồi chức năng &amp; Vật lý trị liệu.</p>
+    <div class="hero-meta">
+      <div><b>Người đề xuất</b>Quyet · quyet.vukhac@gmail.com</div>
+      <div><b>Ngày</b>08/07/2026</div>
+      <div><b>Đối tượng</b>Team nghiên cứu &amp; khách hàng bệnh viện</div>
+      <div><b>Dữ liệu demo</b>sEMG mô phỏng (synthetic)</div>
+    </div>
+  </div>
+</header>
+
+<section id="overview">
+  <div class="container">
+    <div class="kicker">Tổng quan</div>
+    <h2 class="h-title">Vì sao cần một demo, không chỉ là kết quả nghiên cứu</h2>
+    <p class="h-lede">Kết quả thuật toán hiện đang ở dạng nghiên cứu (features, mô hình phân loại, chỉ số F1). Để thuyết phục một khách hàng bệnh viện, họ cần thấy được sản phẩm "chạy" trên một tình huống lâm sàng cụ thể, chứ không phải một bảng số liệu.</p>
+    <div class="prose">
+      <p>Đề xuất này mô tả một demo tương tác, sử dụng dữ liệu sEMG giả lập (vì chưa có bộ dữ liệu lâm sàng thu thập tại chỗ), tái hiện đúng luồng xử lý của thuật toán: tín hiệu thô → tiền xử lý → trích xuất đặc trưng → phân loại mỏi cơ → hiển thị kết quả cho người dùng cuối (kỹ thuật viên vật lý trị liệu / bác sĩ). Mục tiêu là để bệnh viện hình dung được sản phẩm sẽ trông như thế nào và giá trị lâm sàng nó mang lại, trước khi đầu tư vào giai đoạn thu thập dữ liệu thật và tích hợp phần cứng.</p>
+    </div>
+    <div class="grid3">
+      <div class="stat-card">
+        <div class="num">2</div>
+        <div class="lbl">Usecase lâm sàng trong lĩnh vực Phục hồi chức năng &amp; Vật lý trị liệu</div>
+      </div>
+      <div class="stat-card">
+        <div class="num">3</div>
+        <div class="lbl">Lớp dữ liệu hiển thị: tín hiệu thô, tín hiệu sau xử lý, kết quả phân loại</div>
+      </div>
+      <div class="stat-card">
+        <div class="num">95.1%</div>
+        <div class="lbl">F1-score của mô hình KNN trong nghiên cứu nền tảng (dùng làm cơ sở tham số mô phỏng)</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="alt" id="research">
+  <div class="container">
+    <div class="kicker">Cơ sở nghiên cứu</div>
+    <h2 class="h-title">Thuật toán nền tảng cho demo</h2>
+    <p class="h-lede">Demo được xây dựng bám sát phương pháp luận của nghiên cứu đã công bố, để đảm bảo tính xác thực khoa học của sản phẩm khi trình bày với khách hàng.</p>
+
+    <div class="paper-box">
+      <div class="title">Detection of Muscles Fatigue Through Surface EMG Signals Utilizing Machine Learning Algorithm</div>
+      <div class="meta">Huu, N.T., Luu, G.T., Ravier, P., Buttelli, O. (2025) · 10th International Conference on the Development of Biomedical Engineering in Vietnam (BME 2024) · IFMBE Proceedings, vol 123, Springer · DOI: 10.1007/978-3-031-90197-3_65</div>
+      <div class="tag-row">
+        <span class="tag">14 đặc trưng (8 miền thời gian + 6 miền tần số)</span>
+        <span class="tag">Feature selection: mRMR</span>
+        <span class="tag">Mô hình: SVM · LDA · KNN</span>
+        <span class="tag">KNN tốt nhất: F1 = 95.12%</span>
+      </div>
+    </div>
+
+    <div class="prose">
+      <p>Nghiên cứu trích xuất tổng cộng 14 đặc trưng từ tín hiệu sEMG bề mặt: 8 đặc trưng miền thời gian và 6 đặc trưng miền tần số, sau đó áp dụng phương pháp <em>minimum Redundancy – Maximum Relevance (mRMR)</em> để chọn lọc các đặc trưng có giá trị phân biệt cao nhất. Ba mô hình phân loại được so sánh là SVM, LDA và KNN; trong đó KNN cho kết quả tốt nhất với F1-score 95.12%. Các đặc trưng <b>Mean Absolute Value (MAV)</b>, <b>Skewness</b> và <b>Mean</b> được đánh giá là có khả năng phân biệt trạng thái mỏi cơ rõ rệt nhất.</p>
+      <p>Demo mô phỏng lại đúng các đại lượng này: biên độ tín hiệu (liên quan MAV/RMS) tăng dần và tần số trung vị (Median Frequency) giảm dần khi cơ mỏi – đây là hai dấu hiệu sinh lý kinh điển của mỏi cơ mà nghiên cứu đã khai thác bằng học máy.</p>
+    </div>
+  </div>
+</section>
+
+<section id="pipeline">
+  <div class="container">
+    <div class="kicker">Kiến trúc demo</div>
+    <h2 class="h-title">Luồng xử lý dữ liệu được tái hiện trong demo</h2>
+    <p class="h-lede">Mỗi usecase demo đều hiển thị đủ 3 lớp dữ liệu: đầu vào thô, dữ liệu sau xử lý của thuật toán, và kết quả/tính năng usecase.</p>
+    <div class="pipeline">
+      <div class="pipe-step"><div class="ico">📡</div><div class="t">Cảm biến sEMG (giả lập)</div><div class="d">Tín hiệu thô theo thời gian thực, đặt trên nhóm cơ mục tiêu</div></div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-step"><div class="ico">🧹</div><div class="t">Tiền xử lý</div><div class="d">Lọc nhiễu, rectify, chuẩn hoá theo cửa sổ tín hiệu</div></div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-step"><div class="ico">🧮</div><div class="t">Trích xuất đặc trưng</div><div class="d">MAV, RMS, Median Frequency, Skewness…(14 đặc trưng)</div></div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-step"><div class="ico">🤖</div><div class="t">Phân loại mỏi cơ</div><div class="d">Mô hình học máy (tham chiếu KNN, F1 95.1%)</div></div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-step"><div class="ico">📊</div><div class="t">Hiển thị &amp; cảnh báo</div><div class="d">Giao diện cho kỹ thuật viên / bác sĩ theo usecase</div></div>
+    </div>
+  </div>
+</section>
+
+<section class="alt" id="uc1">
+  <div class="container">
+    <div class="kicker">Usecase 1</div>
+    <span class="uc-badge">🏥 Giám sát mỏi cơ thời gian thực trong buổi tập phục hồi chức năng</span>
+    <h2 class="h-title" style="margin-top:0;">Kịch bản: Bệnh nhân phục hồi chức năng chi trên/dưới</h2>
+    <p class="h-lede">Kỹ thuật viên vật lý trị liệu gắn cảm biến sEMG lên nhóm cơ đang tập (VD: cơ nhị đầu tay sau đột quỵ). Hệ thống theo dõi tín hiệu theo từng lần lặp (rep) và cảnh báo khi cơ có dấu hiệu mỏi quá mức — giúp tránh tập bù trừ sai tư thế hoặc chấn thương do tập quá sức.</p>
+    <div class="preview-tag" id="uc1-preview-tag">🔍 Đang hiển thị dữ liệu xem trước — nhấn "Bắt đầu mô phỏng buổi tập" để chạy trực tiếp theo thời gian thực</div>
+
+    <div class="demo-shell">
+      <div class="demo-toolbar">
+        <div class="left">
+          <select id="uc1-muscle">
+            <option>Cơ nhị đầu tay (Biceps brachii)</option>
+            <option>Cơ tứ đầu đùi (Quadriceps)</option>
+            <option>Cơ delta vai (Deltoid)</option>
+          </select>
+          <select id="uc1-exercise">
+            <option>Bài tập gập khuỷu tay có kháng lực</option>
+            <option>Bài tập duỗi gối ngồi</option>
+          </select>
+        </div>
+        <div>
+          <button class="demo-btn" id="uc1-start">▶ Bắt đầu mô phỏng buổi tập</button>
+          <button class="demo-btn" id="uc1-reset" style="background:#134e4a;">⟲ Reset</button>
+        </div>
+      </div>
+
+      <div class="demo-grid">
+        <div class="panel">
+          <h4>Minh hoạ xử lý tín hiệu: dữ liệu thô vs. sau khử nhiễu (rectify + envelope)</h4>
+          <div class="chart-wrap"><canvas id="chart-uc1-denoise"></canvas></div>
+          <div style="font-size:11.5px;color:#8b93ad;margin:4px 0 2px;">Đường mờ: tín hiệu sEMG thô (nhiễu cao). Đường đậm: tín hiệu sau tiền xử lý (rectify + lọc trung bình trượt) — đầu vào thực tế cho bước trích xuất đặc trưng.</div>
+          <h4 style="margin-top:14px;">Đặc trưng sau xử lý theo từng rep (RMS &amp; Median Frequency)</h4>
+          <div class="chart-wrap"><canvas id="chart-uc1-features"></canvas></div>
+        </div>
+        <div class="panel">
+          <h4>Kết quả nhận diện mỏi cơ</h4>
+          <div class="metric-row">
+            <div class="metric"><div class="v" id="uc1-rep">0 / 20</div><div class="l">Số lần lặp (rep)</div></div>
+            <div class="metric"><div class="v" id="uc1-rms">–</div><div class="l">RMS hiện tại</div></div>
+          </div>
+          <div class="gauge-wrap">
+            <svg width="220" height="130" viewBox="0 0 220 130">
+              <path d="M20,120 A90,90 0 0,1 62,38" fill="none" stroke="#16a34a" stroke-width="16" stroke-linecap="round"/>
+              <path d="M62,38 A90,90 0 0,1 158,38" fill="none" stroke="#d97706" stroke-width="16" stroke-linecap="round"/>
+              <path d="M158,38 A90,90 0 0,1 200,120" fill="none" stroke="#dc2626" stroke-width="16" stroke-linecap="round"/>
+              <g id="uc1-needle" style="transform-origin:110px 120px; transform:rotate(-90deg); transition:transform .5s ease;">
+                <line x1="110" y1="120" x2="110" y2="45" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
+              </g>
+              <circle cx="110" cy="120" r="7" fill="#fff"/>
+            </svg>
+            <div class="gauge-score" id="uc1-score">0</div>
+            <div class="gauge-caption">Chỉ số mỏi cơ (Fatigue Index, 0–100)</div>
+          </div>
+          <div class="status-badge status-ok" id="uc1-status" style="margin-top:10px;">Trạng thái: Bình thường</div>
+          <div class="alert-bar" id="uc1-alert">⚠ Khuyến nghị: giảm cường độ hoặc cho bệnh nhân nghỉ giữa hiệp.</div>
+          <div class="disclaimer">Dữ liệu tín hiệu và chỉ số mỏi cơ là mô phỏng minh hoạ (synthetic), phục vụ trình bày ý tưởng demo — chưa phải kết quả đo trên bệnh nhân thật.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="uc2">
+  <div class="container">
+    <div class="kicker">Usecase 2</div>
+    <span class="uc-badge">📈 Theo dõi tiến triển sức bền cơ qua nhiều buổi trị liệu</span>
+    <h2 class="h-title" style="margin-top:0;">Kịch bản: Báo cáo tiến độ phục hồi cho bác sĩ điều trị</h2>
+    <p class="h-lede">Thay vì chỉ đánh giá chủ quan ("bệnh nhân cảm thấy đỡ mỏi hơn"), hệ thống tổng hợp chỉ số mỏi cơ qua từng buổi tập trong nhiều tuần, cho bác sĩ một thước đo khách quan để điều chỉnh phác đồ và làm hồ sơ bệnh án / báo cáo bảo hiểm.</p>
+
+    <div class="demo-shell">
+      <div class="demo-toolbar">
+        <div class="left">
+          <span style="font-size:13px;color:#8b93ad;">Bệnh nhân: Nguyễn Văn A · Chương trình PHCN 4 tuần sau chấn thương vai</span>
+        </div>
+        <div>
+          <button class="demo-btn" id="uc2-run">▶ Tạo báo cáo tiến độ</button>
+        </div>
+      </div>
+
+      <div class="demo-grid">
+        <div class="panel">
+          <h4>Lịch sử các buổi tập</h4>
+          <table class="session-table">
+            <thead><tr><th>Buổi</th><th>Ngày</th><th>Thời lượng</th><th>Điểm sức bền cơ</th></tr></thead>
+            <tbody id="uc2-table"></tbody>
+          </table>
+          <h4 style="margin-top:14px;">Xu hướng điểm sức bền cơ (Fatigue Resistance Score) qua các buổi</h4>
+          <div class="chart-wrap"><canvas id="chart-uc2-trend"></canvas></div>
+        </div>
+        <div class="panel">
+          <h4>So sánh tín hiệu: Buổi đầu vs. Buổi gần nhất</h4>
+          <div class="chart-wrap tall"><canvas id="chart-uc2-compare"></canvas></div>
+          <div class="summary-card">
+            <div class="big" id="uc2-improve">–</div>
+            <p id="uc2-summary-text">Nhấn "Tạo báo cáo tiến độ" để xem tóm tắt tự động.</p>
+          </div>
+          <div class="disclaimer" style="margin-top:12px;">Dữ liệu 6 buổi tập là mô phỏng minh hoạ theo xu hướng cải thiện sức bền cơ điển hình trong phục hồi chức năng.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    Đề xuất nội bộ · Chuẩn bị bởi Quyet (quyet.vukhac@gmail.com) · 08/07/2026 · Dựa trên nghiên cứu: Huu, Luu, Ravier &amp; Buttelli (2025), IFMBE Proceedings vol 123, Springer.
+  </div>
+</footer>
+
+<script>
+// ---------- Shared helpers ----------
+function clamp(v,min,max){return Math.max(min,Math.min(max,v));}
+function rand(min,max){return Math.random()*(max-min)+min;}
+
+// generate a short raw-looking sEMG burst for a given RMS target and "frequency richness" (0=low freq/fatigued,1=high freq/fresh)
+function genRawBurst(nSamples, targetRMS, freshness){
+  const arr=[];
+  const nComponents=4;
+  const freqs=[];
+  for(let i=0;i<nComponents;i++){
+    // fresher muscle -> higher frequency content; fatigued -> compressed toward lower freq
+    freqs.push(rand(0.15,0.35)+freshness*rand(0.15,0.35));
+  }
+  for(let i=0;i<nSamples;i++){
+    let s=0;
+    for(let c=0;c<nComponents;c++){
+      s+=Math.sin(i*freqs[c]+rand(0,6))*rand(0.5,1);
+    }
+    s+= (Math.random()-0.5)*2; // broadband noise
+    arr.push(s);
+  }
+  // normalize to target RMS
+  const rms=Math.sqrt(arr.reduce((a,b)=>a+b*b,0)/arr.length) || 1;
+  return arr.map(v=>v/rms*targetRMS);
+}
+
+// ---------- USE CASE 1 : real-time single-session monitoring ----------
+const uc1Ctx1=document.getElementById('chart-uc1-denoise').getContext('2d');
+const uc1Ctx2=document.getElementById('chart-uc1-features').getContext('2d');
+
+// rectify (abs) + moving-average smoothing to illustrate the "denoised / processed" signal used for feature extraction
+function computeEnvelope(raw, windowSize){
+  windowSize=windowSize||9;
+  const half=Math.floor(windowSize/2);
+  const rectified=raw.map(v=>Math.abs(v));
+  const smoothed=[];
+  for(let i=0;i<rectified.length;i++){
+    const start=Math.max(0,i-half), end=Math.min(rectified.length-1,i+half);
+    let sum=0,count=0;
+    for(let j=start;j<=end;j++){sum+=rectified[j];count++;}
+    smoothed.push(sum/count);
+  }
+  return smoothed;
+}
+
+const uc1RawChart=new Chart(uc1Ctx1,{
+  type:'line',
+  data:{labels:Array.from({length:150},(_,i)=>i),datasets:[
+    {label:'Tín hiệu thô (raw)',data:Array(150).fill(0),borderColor:'rgba(139,147,173,0.45)',borderWidth:1,pointRadius:0,tension:0},
+    {label:'Sau xử lý (rectify + envelope)',data:Array(150).fill(0),borderColor:'#22d3ee',borderWidth:2.5,pointRadius:0,tension:.25}
+  ]},
+  options:{animation:false,responsive:true,maintainAspectRatio:false,
+    scales:{x:{display:false},y:{min:-4,max:4,grid:{color:'#232b4a'},ticks:{color:'#8b93ad',font:{size:9}}}},
+    plugins:{legend:{display:true,labels:{color:'#cbd3ea',font:{size:10},boxWidth:14}}}}
+});
+
+const uc1FeatChart=new Chart(uc1Ctx2,{
+  type:'line',
+  data:{labels:[],datasets:[
+    {label:'RMS',data:[],borderColor:'#fb7185',backgroundColor:'transparent',yAxisID:'y',tension:.3,pointRadius:2},
+    {label:'Median Freq (Hz, chuẩn hoá)',data:[],borderColor:'#60a5fa',backgroundColor:'transparent',yAxisID:'y1',tension:.3,pointRadius:2}
+  ]},
+  options:{animation:false,responsive:true,maintainAspectRatio:false,
+    scales:{
+      x:{ticks:{color:'#8b93ad',font:{size:9}},grid:{color:'#232b4a'}},
+      y:{position:'left',ticks:{color:'#fb7185',font:{size:9}},grid:{color:'#232b4a'}},
+      y1:{position:'right',ticks:{color:'#60a5fa',font:{size:9}},grid:{display:false}}
+    },
+    plugins:{legend:{labels:{color:'#cbd3ea',font:{size:10}}}}}
+});
+
+let uc1Timer=null, uc1Rep=0;
+const uc1TotalReps=20;
+
+function uc1SetGauge(score){
+  const clamped=clamp(score,0,100);
+  const angle=-90+clamped/100*180;
+  document.getElementById('uc1-needle').style.transform=`rotate(${angle}deg)`;
+  document.getElementById('uc1-score').textContent=Math.round(clamped);
+  const statusEl=document.getElementById('uc1-status');
+  const alertEl=document.getElementById('uc1-alert');
+  if(clamped<40){
+    statusEl.className='status-badge status-ok';statusEl.textContent='Trạng thái: Bình thường';
+    alertEl.className='alert-bar';
+  }else if(clamped<70){
+    statusEl.className='status-badge status-warn';statusEl.textContent='Trạng thái: Bắt đầu mỏi';
+    alertEl.className='alert-bar alert-warn show';alertEl.textContent='⚠ Cơ bắt đầu có dấu hiệu mỏi — theo dõi thêm 2-3 rep tiếp theo.';
+  }else{
+    statusEl.className='status-badge status-danger';statusEl.textContent='Trạng thái: Mỏi cao';
+    alertEl.className='alert-bar alert-danger show';alertEl.textContent='⛔ Khuyến nghị: dừng bài tập hoặc cho bệnh nhân nghỉ giữa hiệp để tránh chấn thương.';
+  }
+}
+
+function uc1Step(){
+  uc1Rep++;
+  document.getElementById('uc1-rep').textContent=`${uc1Rep} / ${uc1TotalReps}`;
+  const progress=uc1Rep/uc1TotalReps; // 0..1
+  const fatigue=clamp(progress*1.15+rand(-0.05,0.05),0,1); // fatigue level 0..1
+  const targetRMS=1.0+fatigue*2.3;
+  const freshness=1-fatigue; // higher freshness -> higher freq content
+
+  const burst=genRawBurst(150,targetRMS,freshness);
+  const envelope=computeEnvelope(burst,9);
+  uc1RawChart.data.datasets[0].data=burst;
+  uc1RawChart.data.datasets[1].data=envelope;
+  uc1RawChart.update('none');
+
+  document.getElementById('uc1-rms').textContent=targetRMS.toFixed(2);
+
+  const mdf=(65-fatigue*22+rand(-1.5,1.5)); // simulated median frequency Hz, decreasing
+  uc1FeatChart.data.labels.push('R'+uc1Rep);
+  uc1FeatChart.data.datasets[0].data.push(targetRMS);
+  uc1FeatChart.data.datasets[1].data.push(mdf/20); // normalize to similar scale visually on y1 (actual Hz shown via tooltip label)
+  uc1FeatChart.update('none');
+
+  const score=fatigue*100;
+  uc1SetGauge(score);
+
+  if(uc1Rep>=uc1TotalReps){
+    clearInterval(uc1Timer);
+    document.getElementById('uc1-start').disabled=false;
+    document.getElementById('uc1-start').textContent='▶ Bắt đầu mô phỏng buổi tập';
+  }
+}
+
+document.getElementById('uc1-start').addEventListener('click',()=>{
+  uc1Reset();
+  document.getElementById('uc1-preview-tag').style.display='none';
+  document.getElementById('uc1-start').disabled=true;
+  document.getElementById('uc1-start').textContent='⏱ Đang mô phỏng...';
+  uc1Timer=setInterval(uc1Step,650);
+});
+
+function uc1Reset(){
+  clearInterval(uc1Timer);
+  uc1Rep=0;
+  document.getElementById('uc1-rep').textContent='0 / 20';
+  document.getElementById('uc1-rms').textContent='–';
+  uc1FeatChart.data.labels=[];
+  uc1FeatChart.data.datasets[0].data=[];
+  uc1FeatChart.data.datasets[1].data=[];
+  uc1FeatChart.update('none');
+  uc1RawChart.data.datasets[0].data=Array(150).fill(0);
+  uc1RawChart.data.datasets[1].data=Array(150).fill(0);
+  uc1RawChart.update('none');
+  uc1SetGauge(0);
+  document.getElementById('uc1-start').disabled=false;
+  document.getElementById('uc1-start').textContent='▶ Bắt đầu mô phỏng buổi tập';
+}
+document.getElementById('uc1-reset').addEventListener('click',()=>{
+  uc1Reset();
+  document.getElementById('uc1-preview-tag').style.display='inline-flex';
+});
+
+// Seed a static preview (8 reps of a typical session) so the diagrams are meaningful
+// immediately on page load, before the user clicks "Bắt đầu mô phỏng".
+function uc1Seed(){
+  const seedReps=8;
+  let lastBurst=null, lastEnvelope=null, lastRMS=0;
+  for(let r=1;r<=seedReps;r++){
+    const progress=r/uc1TotalReps;
+    const fatigue=clamp(progress*1.15,0,1);
+    const targetRMS=1.0+fatigue*2.3;
+    const freshness=1-fatigue;
+    lastBurst=genRawBurst(150,targetRMS,freshness);
+    lastEnvelope=computeEnvelope(lastBurst,9);
+    lastRMS=targetRMS;
+    const mdf=(65-fatigue*22);
+    uc1FeatChart.data.labels.push('R'+r);
+    uc1FeatChart.data.datasets[0].data.push(targetRMS);
+    uc1FeatChart.data.datasets[1].data.push(mdf/20);
+  }
+  uc1FeatChart.update('none');
+  uc1RawChart.data.datasets[0].data=lastBurst;
+  uc1RawChart.data.datasets[1].data=lastEnvelope;
+  uc1RawChart.update('none');
+  document.getElementById('uc1-rep').textContent=`${seedReps} / ${uc1TotalReps}`;
+  document.getElementById('uc1-rms').textContent=lastRMS.toFixed(2);
+  uc1SetGauge((seedReps/uc1TotalReps)*115);
+}
+uc1Seed();
+
+// ---------- USE CASE 2 : multi-session progress dashboard ----------
+const sessionDates=['10/06','13/06','17/06','20/06','24/06','27/06'];
+// endurance score: how well muscle resists fatigue across the session (higher = better), improving trend with noise
+let enduranceScores=[38,45,52,58,67,74].map(v=>clamp(v+rand(-3,3),0,100));
+
+function renderSessionTable(){
+  const tbody=document.getElementById('uc2-table');
+  tbody.innerHTML='';
+  sessionDates.forEach((d,i)=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td>#${i+1}</td><td>${d}/2026</td><td>${18+i}p</td><td>${enduranceScores[i].toFixed(0)}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+renderSessionTable();
+
+const uc2TrendCtx=document.getElementById('chart-uc2-trend').getContext('2d');
+const uc2TrendChart=new Chart(uc2TrendCtx,{
+  type:'line',
+  data:{labels:sessionDates,datasets:[{label:'Fatigue Resistance Score',data:enduranceScores,borderColor:'#34d399',backgroundColor:'rgba(52,211,153,0.15)',fill:true,tension:.35,pointRadius:3}]},
+  options:{animation:false,responsive:true,maintainAspectRatio:false,
+    scales:{x:{ticks:{color:'#8b93ad',font:{size:9}},grid:{color:'#232b4a'}},y:{min:0,max:100,ticks:{color:'#8b93ad',font:{size:9}},grid:{color:'#232b4a'}}},
+    plugins:{legend:{labels:{color:'#cbd3ea',font:{size:10}}}}}
+});
+
+// before/after overlay: session1 fatigues fast, latest session fatigues slower (RMS rises less steeply)
+function genSessionCurve(nReps, fatigueRate){
+  const out=[];
+  for(let r=0;r<nReps;r++){
+    const f=clamp((r/nReps)*fatigueRate+rand(-0.03,0.03),0,1);
+    out.push((1+f*2.3).toFixed(2)*1);
+  }
+  return out;
+}
+const firstSessionCurve=genSessionCurve(20,1.3);
+const lastSessionCurve=genSessionCurve(20,0.55);
+
+const uc2CompareCtx=document.getElementById('chart-uc2-compare').getContext('2d');
+const uc2CompareChart=new Chart(uc2CompareCtx,{
+  type:'line',
+  data:{labels:Array.from({length:20},(_,i)=>'R'+(i+1)),datasets:[
+    {label:'Buổi #1 (10/06)',data:firstSessionCurve,borderColor:'#fb7185',backgroundColor:'transparent',tension:.3,pointRadius:2},
+    {label:'Buổi #6 (27/06)',data:lastSessionCurve,borderColor:'#34d399',backgroundColor:'transparent',tension:.3,pointRadius:2}
+  ]},
+  options:{animation:false,responsive:true,maintainAspectRatio:false,
+    scales:{x:{ticks:{color:'#8b93ad',font:{size:9}},grid:{color:'#232b4a'}},y:{ticks:{color:'#8b93ad',font:{size:9}},grid:{color:'#232b4a'},title:{display:true,text:'RMS (biên độ)',color:'#8b93ad',font:{size:10}}}},
+    plugins:{legend:{labels:{color:'#cbd3ea',font:{size:10}}}}}
+});
+
+document.getElementById('uc2-run').addEventListener('click',()=>{
+  const first=enduranceScores[0], last=enduranceScores[enduranceScores.length-1];
+  const improvePct=((last-first)/first*100).toFixed(0);
+  document.getElementById('uc2-improve').textContent=`+${improvePct}%`;
+  document.getElementById('uc2-summary-text').textContent=
+    `Điểm sức bền cơ (Fatigue Resistance Score) tăng từ ${first.toFixed(0)} lên ${last.toFixed(0)} sau ${sessionDates.length} buổi tập (~2.5 tuần). Bệnh nhân có xu hướng chịu mỏi tốt hơn rõ rệt — gợi ý bác sĩ có thể cân nhắc tăng cường độ bài tập cho giai đoạn tiếp theo.`;
+});
+</script>
+
+</body>
+</html>

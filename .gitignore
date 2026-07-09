@@ -12,3 +12,7 @@ papers/
 .claude/
 
 .venv/
+
+.agents/
+
+MATLAB/
