@@ -55,6 +55,11 @@ def get_session(subject: int, channel: int):
     return sb.build_session_signal(subject, channel)
 
 
+@st.cache_data(show_spinner="Đang tải danh sách kênh hợp lệ…")
+def get_valid_channels(subject: int):
+    return sb.common_valid_channels(subject)
+
+
 st.title("🏥 Giám sát Mỏi cơ Near-Real-Time — Buổi tập ghép từ dữ liệu thật")
 st.caption(
     "Bệnh nhân phục hồi chức năng chi trên · buổi tập được ghép từ các bản ghi "
@@ -77,7 +82,7 @@ if not MUSCLE_OPTIONS[muscle]:
     )
     st.stop()
 
-valid_channels = sb.common_valid_channels(SUBJECT)
+valid_channels = get_valid_channels(SUBJECT)
 with col_sel2:
     channel = st.selectbox("Kênh EMG", valid_channels, format_func=lambda i: f"Kênh {i}")
 with col_sel3:
