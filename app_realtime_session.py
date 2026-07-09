@@ -39,10 +39,10 @@ HOVERLABEL = dict(font=dict(size=20, color="white", family="Arial"),
                   bgcolor="#1E1E1E", bordercolor="#1E1E1E")
 
 
-def chart(fig, **kwargs) -> None:
+def chart(fig, key: str | None = None, **kwargs) -> None:
     fig.update_layout(hoverlabel=HOVERLABEL, hovermode="closest")
     kwargs.setdefault("width", "stretch")
-    st.plotly_chart(fig, **kwargs)
+    st.plotly_chart(fig, key=key, **kwargs)
 
 
 @st.cache_data(show_spinner="Đang huấn luyện / tải mô hình…")
@@ -108,7 +108,7 @@ if not st.session_state["session_started"] and not start:
     preview_len = int(DISPLAY_WINDOW_SEC * config.FS)
     preview_x = signal[:preview_len]
     preview_t = np.arange(len(preview_x)) / config.FS
-    chart(vc.build_waveform_figure(preview_t, preview_x, preview_x))
+    chart(vc.build_waveform_figure(preview_t, preview_x, preview_x), key="preview_waveform")
 
 if start:
     st.session_state["session_started"] = True
@@ -137,7 +137,7 @@ if start:
     for step in steps:
         with ph_wave.container():
             st.markdown("### ① Tín hiệu thô vs. sau khử nhiễu — vị trí hiện tại")
-            chart(vc.build_waveform_figure(step.window_t, step.window_raw, step.window_processed))
+            chart(vc.build_waveform_figure(step.window_t, step.window_raw, step.window_processed), key=f"waveform_{step.step_idx}")
 
         seg_idx = step.segment_idx
         if seg_idx not in seen_segments:
@@ -149,7 +149,7 @@ if start:
 
         with ph_trend.container():
             st.markdown("### ② Xu hướng RMS & MDF theo giai đoạn (%MVC)")
-            chart(vc.build_trend_figure(mvc_hist, rms_hist, mdf_hist))
+            chart(vc.build_trend_figure(mvc_hist, rms_hist, mdf_hist), key=f"trend_{step.step_idx}")
 
         current = assessments[seg_idx]
         ph_phase.metric("Giai đoạn hiện tại", f"{current.segment.mvc}% MVC",
@@ -158,7 +158,7 @@ if start:
         knn_pred = next(p for p in current.predictions if p["model"] == "KNN")
         status = "Mỏi" if knn_pred["pred"] == 1 else "Không mỏi"
         with ph_badge.container():
-            chart(vc.build_status_badge(status, knn_pred["p_fatigue"]))
+            chart(vc.build_status_badge(status, knn_pred["p_fatigue"]), key=f"badge_{step.step_idx}")
 
         if status == "Không mỏi":
             ph_status.success(f"Trạng thái (model KNN): {status}")
