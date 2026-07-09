@@ -85,26 +85,38 @@ def build_psd_figure(
         name="PSD",
     ))
 
+    # MDF and MNF are often only a few Hz apart, so anchoring both labels to
+    # their line position (the old approach) makes them collide. Instead we
+    # draw the lines without inline annotations and stack two fixed-height
+    # labels above the plot, each pointing down to its line with an arrow.
     mdf_val = feats["MDF"]
-    fig.add_vline(
-        x=mdf_val, line_dash="dash", line_color="#E74C3C", line_width=2,
-        annotation_text=f"MDF = {mdf_val:.1f} Hz",
-        annotation_position="top right",
-        annotation_font=dict(size=14, color="#E74C3C"),
-    )
+    fig.add_vline(x=mdf_val, line_dash="dash", line_color="#E74C3C", line_width=2)
 
     mnf_val = feats["MNF"]
-    fig.add_vline(
-        x=mnf_val, line_dash="dot", line_color="#F39C12", line_width=2,
-        annotation_text=f"MNF = {mnf_val:.1f} Hz",
-        annotation_position="top left",
-        annotation_font=dict(size=14, color="#F39C12"),
+    fig.add_vline(x=mnf_val, line_dash="dot", line_color="#F39C12", line_width=2)
+
+    fig.add_annotation(
+        x=mdf_val, y=1.0, xref="x", yref="paper",
+        text=f"MDF = {mdf_val:.1f} Hz",
+        showarrow=True, arrowhead=0, arrowcolor="#E74C3C",
+        ax=0, ay=-34, yshift=0,
+        font=dict(size=13, color="#E74C3C"),
+        bgcolor="rgba(0,0,0,0.55)", borderpad=3,
+    )
+    fig.add_annotation(
+        x=mnf_val, y=1.0, xref="x", yref="paper",
+        text=f"MNF = {mnf_val:.1f} Hz",
+        showarrow=True, arrowhead=0, arrowcolor="#F39C12",
+        ax=0, ay=-10, yshift=0,
+        font=dict(size=13, color="#F39C12"),
+        bgcolor="rgba(0,0,0,0.55)", borderpad=3,
     )
 
     fig.update_layout(
         xaxis_title="frequency (Hz)", yaxis_title="PSD",
         title="Power Spectral Density",
         height=420,
+        margin=dict(t=90),
         legend=dict(orientation="h", yanchor="bottom", y=1.02,
                     xanchor="right", x=1),
     )
