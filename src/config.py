@@ -27,8 +27,13 @@ FEATURE_NAMES = [
     "Spectral_Entropy",
 ]
 
-# --- Labeling & split (confirmed with user) --------------------------------
-FATIGUE_KEYWORD = "fatigue"  # filename contains this -> Fatigue (1), else Normal (0)
+# --- Labeling & split (confirmed with user, updated 2026-07-09) ------------
+# Label by the %MVC number embedded in the filename condition (e.g. "10" in
+# "10_ap_fatigue", "70" in "fatigue_70"): above this physiological threshold
+# -> Fatigue (1), at or below -> Normal (0). Supersedes the earlier
+# keyword-based rule ("fatigue" in condition -> Fatigue), which mislabeled
+# "10_ap_fatigue" (10% MVC) as Fatigue just because of its name.
+FATIGUE_MVC_THRESHOLD = 60
 LABEL_NAMES = {0: "Normal", 1: "Fatigue"}
 
 TRAIN_SUBJECTS = [5, 7, 8, 11]

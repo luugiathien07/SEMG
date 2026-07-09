@@ -30,6 +30,12 @@ def _p_fatigue(estimator, X: np.ndarray) -> float | None:
 def predict_channel(x: np.ndarray, results: list[ModelResult]) -> list[dict]:
     """Predict Normal/Fatigue for one channel with every trained model.
 
+    Uses each model's tuned decision threshold (``r.threshold``, chosen on
+    the training set to maximize Fatigue F1 — see ``evaluate.py``) instead of
+    the default 0.5, so this stays consistent with the reported test metrics.
+    Falls back to ``fitted_estimator.predict()`` when no probability/score is
+    available.
+
     Returns one dict per model: ``model``, ``pred`` (0/1), ``pred_name``,
     ``p_fatigue`` (float in [0, 1] or None).
     """
@@ -39,11 +45,13 @@ def predict_channel(x: np.ndarray, results: list[ModelResult]) -> list[dict]:
         if r.fitted_estimator is None:
             continue
         X = np.array([[feats[f] for f in r.features_used]], dtype=float)
-        pred = int(r.fitted_estimator.predict(X)[0])
+        p_fat = _p_fatigue(r.fitted_estimator, X)
+        threshold = getattr(r, "threshold", 0.5)
+        pred = int(p_fat >= threshold) if p_fat is not None else int(r.fitted_estimator.predict(X)[0])
         out.append({
             "model": r.name,
             "pred": pred,
             "pred_name": config.LABEL_NAMES[pred],
-            "p_fatigue": _p_fatigue(r.fitted_estimator, X),
+            "p_fatigue": p_fat,
         })
     return out

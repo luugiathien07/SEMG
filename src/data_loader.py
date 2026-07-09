@@ -1,7 +1,9 @@
 """Load raw sEMG CSVs and derive per-file metadata.
 
 Filename convention: ``Sujet_{id}_{condition}_emg.csv`` where condition is one
-of ``10/20/40/60/90`` (%MVC), ``fatigue_70`` or ``10_ap_fatigue``.
+of ``10/20/40/60/90`` (%MVC), ``fatigue_70`` or ``10_ap_fatigue``. The label is
+derived from the %MVC number in the condition vs
+``config.FATIGUE_MVC_THRESHOLD`` (see ``parse_filename``).
 
 A "sample" for the classifier is a single EMG channel of a single file, so this
 module exposes helpers to enumerate files, load a file's channel matrix, and
@@ -20,6 +22,7 @@ import pandas as pd
 from . import config
 
 _NAME_RE = re.compile(r"^Sujet_(\d+)_(.+)_emg$", re.IGNORECASE)
+_MVC_NUMBER_RE = re.compile(r"\d+")
 
 
 @dataclass(frozen=True)
@@ -41,7 +44,12 @@ def parse_filename(path: Path) -> FileInfo | None:
         return None
     subject = int(m.group(1))
     condition = m.group(2)
-    label = 1 if config.FATIGUE_KEYWORD in condition.lower() else 0
+    # Label by the %MVC number embedded in the condition string (first match,
+    # e.g. "10" in "10_ap_fatigue", "70" in "fatigue_70"): above the
+    # physiological fatigue threshold -> Fatigue (1), else Normal (0).
+    num_match = _MVC_NUMBER_RE.search(condition)
+    mvc = int(num_match.group()) if num_match else 0
+    label = 1 if mvc > config.FATIGUE_MVC_THRESHOLD else 0
     return FileInfo(path=path, subject=subject, condition=condition, label=label)
 
 

@@ -325,8 +325,8 @@ with tab_overview:
                      title="Samples per subject")
         chart(fig)
 
-    st.markdown("**Per-file summary** (label from filename: contains "
-                f"`{config.FATIGUE_KEYWORD}` → Fatigue)")
+    st.markdown("**Per-file summary** (label from filename: %MVC number > "
+                f"{config.FATIGUE_MVC_THRESHOLD} → Fatigue)")
     per_file = (df.groupby(["file", "subject", "condition", "Class"])
                   .size().reset_index(name="valid_channels")
                   .sort_values(["subject", "condition"]))
@@ -464,6 +464,24 @@ with tab_classify:
                    f"KNN F1 ≈ {config.PAPER_REFERENCE['KNN_F1']}, "
                    f"AUC ≈ {config.PAPER_REFERENCE['KNN_AUC']}. "
                    "This demo uses 5 subjects, so absolute values differ.")
+
+        st.markdown("### Xử lý mất cân bằng lớp & hyperparameter tuning")
+        st.caption("Lớp Fatigue là thiểu số trong tập train (128/824). Mỗi mô hình "
+                   "xử lý mất cân bằng theo cách phù hợp (`class_weight=\"balanced\"` "
+                   "cho SVM/DecisionTree, `priors` đều cho LDA, oversampling "
+                   "`RandomOverSampler` cho KNN), rồi `GridSearchCV` (scoring=F1, "
+                   "chỉ trên tập train) chọn siêu tham số, và ngưỡng quyết định "
+                   "P(Fatigue) được tối ưu để tối đa hoá F1 trên train thay vì mặc "
+                   "định 0.5 — cả hai bước đều không chạm vào subject test.")
+        tune_table = pd.DataFrame([{
+            "Model": r.name,
+            "Best hyperparameters": ", ".join(f"{k}={v}" for k, v in r.best_params.items())
+                                    or "(mặc định)",
+            "Ngưỡng P(Fatigue)": r.threshold,
+        } for r in results])
+        st.dataframe(
+            tune_table.style.format({"Ngưỡng P(Fatigue)": "{:.3f}"}),
+            width="stretch", hide_index=True)
 
         st.markdown("### Confusion matrices")
         n_cm_cols = min(len(results), 2)   # fewer columns -> larger tiles
@@ -605,3 +623,48 @@ with tab_predict:
                        f"(**{label_name(truth)}**).")
     else:
         st.info("Chọn file + kênh rồi bấm **Dự đoán** để xem kết quả.")
+
+    # ── ④ Thống kê dự đoán trên toàn bộ 64 kênh của file ────────
+    st.markdown("---")
+    st.markdown("### ④ Thống kê dự đoán 64 kênh (toàn bộ file)")
+    st.caption("Chạy từng mô hình trên **tất cả kênh hợp lệ** của file đang "
+               "chọn ở trên, rồi đếm số kênh được dự đoán Mỏi / Không mỏi. "
+               "Cho thấy các mô hình có nhất quán trên toàn bộ file hay không, "
+               "thay vì chỉ nhìn 1 kênh đơn lẻ.")
+
+    if st.button("Thống kê 64 kênh", key="stat_button"):
+        truth = int(p_info.label)
+        per_model: dict[str, list[int]] = {r.name: [] for r in out.results
+                                            if r.fitted_estimator is not None}
+        for ch in p_valid_idx:
+            x_ch = p_channels[:, ch]
+            for p in inf.predict_channel(x_ch, out.results):
+                per_model[p["model"]].append(p["pred"])
+
+        stat_rows = []
+        for model, preds_ch in per_model.items():
+            n_total = len(preds_ch)
+            n_fatigue = sum(preds_ch)
+            n_normal = n_total - n_fatigue
+            n_match = sum(1 for pr in preds_ch if pr == truth)
+            stat_rows.append({
+                "Model": model,
+                "Số kênh Mỏi": n_fatigue,
+                "Số kênh Không mỏi": n_normal,
+                "% Mỏi": n_fatigue / n_total if n_total else 0.0,
+                "% khớp nhãn thật": n_match / n_total if n_total else 0.0,
+            })
+        stat_df = pd.DataFrame(stat_rows)
+
+        st.caption(f"File **{p_info.name}** · nhãn thật **{label_name(truth)}** · "
+                   f"{len(p_valid_idx)}/{config.N_CHANNELS} kênh hợp lệ đã dùng.")
+        with st.container(key="predtable_stats"):
+            st.table(
+                stat_df.style
+                       .format({"% Mỏi": "{:.1%}", "% khớp nhãn thật": "{:.1%}"})
+                       .background_gradient(subset=["% Mỏi"], cmap="Reds")
+                       .background_gradient(subset=["% khớp nhãn thật"], cmap="Greens")
+                       .hide(axis="index"))
+    else:
+        st.info("Bấm **Thống kê 64 kênh** để xem tổng hợp dự đoán trên toàn bộ "
+                "kênh hợp lệ của file.")

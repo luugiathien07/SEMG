@@ -107,10 +107,14 @@ Bài báo BME 2024 báo cáo top-3 mRMR là **MAV, Skewness, Mean**. Demo lại 
 - *"Accuracy 95% có phải quá tốt/đáng ngờ?"* → Nhìn kèm cỡ dữ liệu nhỏ và việc cả
   hai lớp trải nhiều mức lực (mục 7.5). Vì test trên **người chưa thấy** nên con số
   không phải do rò rỉ; vẫn nên báo cáo F1/AUC và nêu rõ hạn chế.
-- *"Gán nhãn thế nào?"* → Code MATLAB tách lớp bằng thư mục Normal/Fatigue; dữ liệu
-  demo phẳng nên ta khôi phục bằng tên file (chứa `fatigue` → Fatigue). `90%` là
-  baseline nên Normal, `10_ap_fatigue` đo sau mỏi nên Fatigue (mục 2.4). (Bài ICACE
-  có nêu ngưỡng ">60% MVC" nhưng chỉ là tham khảo.)
+- *"Gán nhãn thế nào?"* → Theo ngưỡng sinh lý %MVC > 60 (mục 2.4, cập nhật
+  2026-07-09, khớp tiêu chí ICACE 2019): số %MVC trong tên điều kiện > 60 →
+  Fatigue, ≤ 60 → Normal. Cụ thể: `10/20/40/60` → Normal; `90` và `fatigue_70`
+  (70% MVC) → **Fatigue**; `10_ap_fatigue` → Normal (số %MVC của nó là 10, đo
+  sau khi nghỉ ở cường độ rất thấp — không phải phép đo trong lúc mỏi). Trước
+  đây nhãn được suy từ từ khoá `fatigue` trong tên file (theo cấu trúc thư mục
+  Normal/Fatigue của code MATLAB gốc); cách đó gán sai `90%` là Normal dù vượt
+  ngưỡng sinh lý, nên đã đổi sang dùng trực tiếp ngưỡng %MVC.
 - *"Đã lọc/khử nhiễu tín hiệu chưa?"* → Không — demo **giữ đúng code MATLAB**
   (`Feature_Extraction.m` đọc thẳng CSV, không wavelet denoising); dữ liệu đã lọc
   phần cứng 20–400 Hz. Bài báo có mô tả bước lọc này nhưng code gốc không làm; đây

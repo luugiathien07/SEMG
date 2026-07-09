@@ -1,4 +1,5 @@
 __pycache__/
+.pytest_cache/
 *.pyc
 cache/
 .streamlit/
@@ -13,10 +14,10 @@ papers/
 
 .venv/
 
-<<<<<<< HEAD
 .agents/
 
 MATLAB/
-=======
+
 docs/superpowers/
->>>>>>> 829d50d6f12f25d76618106ba28797a0fc809b85
+
+.superpowers/

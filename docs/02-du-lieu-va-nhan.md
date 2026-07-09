@@ -31,38 +31,48 @@ bỏ cột 0, giữ ma trận `(số_mẫu_thời_gian, 64)`.
 Bài báo BME 2024 phân biệt rõ:
 - "10/20/40/60/90% MVC" → **trạng thái trước khi gây mỏi** (pre-fatigue) nếu không
   ghi chú gì thêm.
-- "**70% MVC trong lúc gây mỏi**" và "**10% MVC sau khi gây mỏi**" → được **chú
-  thích rõ ràng** là trạng thái liên quan mỏi cơ.
+- "**70% MVC trong lúc gây mỏi**" → được **chú thích rõ ràng** là trạng thái mỏi cơ.
+- "**10% MVC sau khi gây mỏi**" (`10_ap_fatigue`) là một phép đo **hồi phục ở mức
+  co cơ rất thấp (10% MVC)**, không phải phép đo trong lúc cơ đang mỏi — về mặt
+  tín hiệu không thể hiện các dấu hiệu mỏi kinh điển (xem 2.4).
 
 | Điều kiện trong tên file | Ý nghĩa | Trạng thái |
 |---|---|---|
-| `10`, `20`, `40`, `60`, `90` | Co cơ 10–90% MVC (đo trước khi gây mỏi) | Trước mỏi |
+| `10`, `20`, `40`, `60` | Co cơ 10–60% MVC (đo trước khi gây mỏi) | Trước mỏi |
+| `90` | Co cơ 90% MVC | Trước mỏi theo giao thức đo, nhưng > ngưỡng 60% MVC |
 | `fatigue_70` | Bài tập gây mỏi ở 70% MVC | Trong lúc mỏi |
-| `10_ap_fatigue` | Đo lại ở 10% MVC **sau** (après) khi đã gây mỏi | Sau mỏi |
+| `10_ap_fatigue` | Đo lại ở 10% MVC **sau** (après) khi đã gây mỏi | Sau mỏi, cường độ thấp |
 
-## 2.4. Cách gán nhãn (khôi phục lại phân chia Normal/Fatigue của code MATLAB)
+## 2.4. Cách gán nhãn (ngưỡng %MVC > 60, cập nhật 2026-07-09)
 
 **Trong code MATLAB gốc**, nhãn đến từ **cấu trúc thư mục**: `Feature_Extraction.m`
 đọc riêng hai thư mục `Train_Data/Normal` và `Train_Data/Fatigue` (và tương tự cho
 `Test_Data`), gán nhãn 0 cho file trong `Normal`, nhãn 1 cho file trong `Fatigue`.
+Nội dung các thư mục gốc đó không nằm trong bộ demo, nên nhãn được suy lại từ tên
+file — nhưng thay vì dò từ khoá `fatigue` trong tên (cách cũ, hai lần bị chỉnh vì
+gán sai `10_ap_fatigue`), nhãn giờ dựa trực tiếp vào **số %MVC trong tên điều
+kiện** so với ngưỡng sinh lý, khớp tiêu chí ICACE 2019 (cơ mỏi khi lực co vượt
+60% MVC):
 
-Bộ dữ liệu demo là **phẳng** (không có sẵn thư mục Normal/Fatigue), nên ta **khôi
-phục lại phân chia đó từ tên file**: tên chứa chữ `fatigue` → **Fatigue (1)**; còn
-lại → **Normal (0)** (`data_loader.parse_filename()`, hằng `config.FATIGUE_KEYWORD`).
+- **Fatigue (1):** số %MVC trong tên điều kiện **> 60** (`config.FATIGUE_MVC_THRESHOLD`).
+- **Normal (0):** số %MVC **≤ 60**.
 
-- **Fatigue:** `fatigue_70` (đo trong lúc gây mỏi) và `10_ap_fatigue` (đo sau khi
-  gây mỏi) — hai điều kiện mà bài báo BME "chú thích rõ ràng" là trạng thái mỏi.
-- **Normal:** `10/20/40/60/90` — các mức co cơ đo trước khi gây mỏi.
+Áp dụng cho từng điều kiện trong bộ demo (`data_loader.parse_filename()` trích số
+đầu tiên tìm thấy trong tên điều kiện bằng regex `\d+`):
 
-Cách này bám theo chính nhãn `fatigue` mã hoá trong tên file, phản ánh đúng cách
-code MATLAB tách hai lớp.
+| Điều kiện | Số %MVC trích ra | So với ngưỡng 60 | Nhãn |
+|---|---|---|---|
+| `10`, `20`, `40`, `60` | 10 / 20 / 40 / 60 | ≤ 60 | Normal (0) |
+| `90` | 90 | > 60 | **Fatigue (1)** |
+| `fatigue_70` | 70 | > 60 | **Fatigue (1)** |
+| `10_ap_fatigue` | 10 (số đầu tiên trong tên) | ≤ 60 | Normal (0) |
 
-> **Ghi chú tham khảo (bài báo).** ICACE 2019 phát biểu tiêu chí sinh lý ">60% MVC"
-> (cơ mỏi khi lực vượt 60% MVC). Nếu áp cứng ngưỡng này làm nhãn nhị phân thì file
-> `90` sẽ thành Fatigue và `10_ap_fatigue` thành Normal — **khác** với cách trên và
-> mâu thuẫn với việc `10_ap_fatigue` đo *sau* khi gây mỏi. Vì dự án ưu tiên bám
-> **code MATLAB** (tách theo Normal/Fatigue, tức theo pha giao thức) nên ta dùng
-> cách gán theo tên file; ">60% MVC" chỉ là bối cảnh sinh lý tham khảo.
+So với cách gán trước đó (dò từ khoá `fatigue`), thay đổi chính là **file `90`
+chuyển từ Normal → Fatigue**; `10_ap_fatigue` vẫn là Normal như lần sửa trước
+(số %MVC của nó là 10, không đổi theo ngưỡng mới). Cách này khớp đúng phần "Ghi
+chú tham khảo" mà tài liệu này từng nêu (ICACE 2019, ">60% MVC") — trước đây bị
+gạt sang một bên vì ưu tiên bám theo cấu trúc thư mục MATLAB, nay được dùng trực
+tiếp theo yêu cầu người dùng.
 
 ## 2.5. Đơn vị mẫu và kênh lỗi
 
@@ -94,10 +104,15 @@ các kênh của cùng một người vào cả train lẫn test (sẽ rò rỉ 
 | Chỉ số | Giá trị |
 |---|---|
 | Tổng số mẫu (kênh × file hợp lệ) | **1270** |
-| Trong đó Normal / Fatigue | 824 / 446 |
+| Trong đó Normal / Fatigue | 950 / 320 |
 | Số file | 20 |
-| Tập train (subject 5,7,8,11) | 824 mẫu (Normal 506, Fatigue 318) |
+| Tập train (subject 5,7,8,11) | 824 mẫu (Normal 632, Fatigue 192) |
 | Tập test (subject 9) | 446 mẫu (Normal 318, Fatigue 128) |
+
+> Số liệu sau khi đổi sang gán nhãn theo ngưỡng %MVC > 60 (2026-07-09, mục 2.4):
+> file `90` chuyển sang Fatigue nên lớp Fatigue tăng trở lại so với lần sửa
+> `10_ap_fatigue` trước đó, tỉ lệ mất cân bằng cũng dịu hơn (train ≈ 3.3:1 thay vì
+> 5.4:1).
 
 Các con số này in ra khi chạy `python -m src.pipeline` và hiển thị ở tab
 **Overview** của Streamlit.
