@@ -119,3 +119,37 @@ class TestAssessSegments:
         assert first.predictions[0]["model"] == "KNN"
         assert first.predictions[0]["pred"] == 1
         assert abs(first.predictions[0]["p_fatigue"] - 0.7) < 1e-9
+
+    def test_rms_reflects_full_segment_not_a_subwindow(self):
+        """Verify that assess_segments uses the FULL segment slice, not a
+        short sub-window. This test independently computes the expected RMS
+        from the known synthetic signal and asserts the result matches —
+        directly catching any regression to sub-window slicing.
+
+        A regression to signal[start:start+100] would produce wrong RMS,
+        failing this test even though the old assertions would still pass.
+        """
+        rng = np.random.default_rng(4)
+        signal = rng.standard_normal(6000) * 0.1
+        segments = _fake_segments()
+        results = [ModelResult(
+            name="KNN", accuracy=0.9, precision=0.9, recall=0.9, f1=0.9,
+            cv_accuracy=0.9, auc=None, confusion=np.zeros((2, 2)),
+            features_used=cfg.FEATURE_NAMES, fitted_estimator=_StubEstimator(),
+            threshold=0.5,
+        )]
+        assessments = assess_segments(signal, segments, results)
+
+        # Ground-truth RMS computed directly from the full segment slice —
+        # independent of assess_segments' own internals. A regression to a
+        # short sub-window (e.g. signal[start:start+100]) would produce a
+        # different RMS and fail this assertion.
+        expected_rms_seg0 = float(np.sqrt(np.mean(signal[0:3000] ** 2)))
+        expected_rms_seg1 = float(np.sqrt(np.mean(signal[3000:6000] ** 2)))
+        assert abs(assessments[0].rms - expected_rms_seg0) < 1e-9
+        assert abs(assessments[1].rms - expected_rms_seg1) < 1e-9
+
+        # Also confirm it's NOT what a buggy 100-sample sub-window would give,
+        # to make the regression this test guards against concrete.
+        wrong_rms_seg0 = float(np.sqrt(np.mean(signal[0:100] ** 2)))
+        assert abs(assessments[0].rms - wrong_rms_seg0) > 1e-6
