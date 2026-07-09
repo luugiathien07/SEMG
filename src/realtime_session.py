@@ -9,6 +9,9 @@ from dataclasses import dataclass
 
 import numpy as np
 
+from . import feature_extraction as fe
+from . import inference as inf
+from .evaluate import ModelResult
 from .session_builder import SegmentInfo
 
 
@@ -73,3 +76,35 @@ def build_playback_steps(
             window_processed=window_processed,
         ))
     return steps
+
+
+@dataclass
+class SegmentAssessment:
+    segment: SegmentInfo
+    feats: dict[str, float]
+    rms: float
+    mdf: float
+    predictions: list[dict]
+
+
+def assess_segments(
+    signal: np.ndarray,
+    segments: list[SegmentInfo],
+    results: list[ModelResult],
+) -> list[SegmentAssessment]:
+    """Extract features and run every trained model on each *whole* segment
+    (not the short playback windows) — this matches how the models were
+    trained (one feature vector per whole file) and avoids the
+    train/inference distribution mismatch that broke the earlier
+    crossfade-based design.
+    """
+    out: list[SegmentAssessment] = []
+    for seg in segments:
+        x = signal[seg.start_sample:seg.end_sample]
+        feats = fe.extract_channel_features(x)
+        predictions = inf.predict_channel(x, results)
+        out.append(SegmentAssessment(
+            segment=seg, feats=feats, rms=feats["RMS"], mdf=feats["MDF"],
+            predictions=predictions,
+        ))
+    return out

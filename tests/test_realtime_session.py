@@ -4,9 +4,11 @@ from pathlib import Path
 import numpy as np
 import pytest
 
+from src import config as cfg
 from src import data_loader as dl
+from src.evaluate import ModelResult
 from src.session_builder import SegmentInfo
-from src.realtime_session import rectify_envelope, PlaybackStep, build_playback_steps
+from src.realtime_session import rectify_envelope, PlaybackStep, build_playback_steps, SegmentAssessment, assess_segments
 
 
 def _fake_segments() -> list[SegmentInfo]:
@@ -75,3 +77,45 @@ class TestBuildPlaybackSteps:
             build_playback_steps(
                 signal, segments, n_steps=5,
                 display_window_sec=0.5, envelope_window_sec=0.05, fs=2000)
+
+
+class _StubEstimator:
+    """Minimal predict_proba-only estimator stub for testing assess_segments
+    without training a real model."""
+    def predict_proba(self, X):
+        return np.array([[0.3, 0.7]])
+
+
+class TestAssessSegments:
+    def test_returns_one_assessment_per_segment(self):
+        rng = np.random.default_rng(4)
+        signal = rng.standard_normal(6000) * 0.1
+        segments = _fake_segments()
+        results = [ModelResult(
+            name="KNN", accuracy=0.9, precision=0.9, recall=0.9, f1=0.9,
+            cv_accuracy=0.9, auc=None, confusion=np.zeros((2, 2)),
+            features_used=cfg.FEATURE_NAMES, fitted_estimator=_StubEstimator(),
+            threshold=0.5,
+        )]
+        assessments = assess_segments(signal, segments, results)
+        assert len(assessments) == 2
+        assert all(isinstance(a, SegmentAssessment) for a in assessments)
+
+    def test_assessment_uses_full_segment_and_stub_prediction(self):
+        rng = np.random.default_rng(4)
+        signal = rng.standard_normal(6000) * 0.1
+        segments = _fake_segments()
+        results = [ModelResult(
+            name="KNN", accuracy=0.9, precision=0.9, recall=0.9, f1=0.9,
+            cv_accuracy=0.9, auc=None, confusion=np.zeros((2, 2)),
+            features_used=cfg.FEATURE_NAMES, fitted_estimator=_StubEstimator(),
+            threshold=0.5,
+        )]
+        assessments = assess_segments(signal, segments, results)
+        first = assessments[0]
+        assert set(first.feats.keys()) == set(cfg.FEATURE_NAMES)
+        assert first.rms == first.feats["RMS"]
+        assert first.mdf == first.feats["MDF"]
+        assert first.predictions[0]["model"] == "KNN"
+        assert first.predictions[0]["pred"] == 1
+        assert abs(first.predictions[0]["p_fatigue"] - 0.7) < 1e-9
