@@ -1,0 +1,84 @@
+==================== SCENARIO 01 SUB 20% ====================
+====================================================================
+EMG FATIGUE CLASSIFICATION — DEMO PIPELINE
+====================================================================
+Samples (file x channel): 1649
+  Normal=1140  Fatigue=509
+  Files=26  Subjects=[np.int64(5), np.int64(7), np.int64(8), np.int64(9), np.int64(11)]
+Train subjects [5, 7, 8, 11]: 1075 samples (N=758, F=317)
+Test subject 9: 574 samples (N=382, F=192)
+--------------------------------------------------------------------
+mRMR ranking: ['Spectral_STD', 'MDF', 'Skewness', 'Spectral_Entropy', 'Spectral_Max', 'Spectral_Min', 'Kurtosis', 'Mean', 'Min', 'MNF', 'RMS', 'STD', 'Max', 'MAV']
+Top-3 (SVM): ['Spectral_STD', 'MDF', 'Skewness']
+--------------------------------------------------------------------
+Model              Acc    Prec     Rec      F1  CV-Acc     AUC
+SVM              0.841   1.000   0.526   0.689   0.933   0.951
+KNN              0.746   0.942   0.255   0.402   0.995   0.636
+LDA              0.730   0.624   0.484   0.545   0.927   0.739
+DecisionTree     0.803   0.832   0.516   0.637   0.987   0.731
+====================================================================
+Paper reference (BME 2024): KNN F1~0.9541, AUC~0.95
+
+==================== SCENARIO 01 SUB 30% ====================
+====================================================================
+EMG FATIGUE CLASSIFICATION — DEMO PIPELINE
+====================================================================
+Samples (file x channel): 1651
+  Normal=1142  Fatigue=509
+  Files=26  Subjects=[np.int64(5), np.int64(7), np.int64(8), np.int64(9), np.int64(11)]
+Train subjects [5, 7, 8, 11]: 1077 samples (N=760, F=317)
+Test subject 9: 574 samples (N=382, F=192)
+--------------------------------------------------------------------
+mRMR ranking: ['Spectral_STD', 'Kurtosis', 'Mean', 'Spectral_Max', 'MDF', 'Spectral_Entropy', 'Spectral_Min', 'Skewness', 'STD', 'MNF', 'RMS', 'Max', 'Min', 'MAV']
+Top-3 (SVM): ['Spectral_STD', 'Kurtosis', 'Mean']
+--------------------------------------------------------------------
+Model              Acc    Prec     Rec      F1  CV-Acc     AUC
+SVM              0.834   1.000   0.505   0.671   0.920   0.837
+KNN              0.756   0.964   0.281   0.435   0.994   0.638
+LDA              0.739   0.640   0.500   0.561   0.942   0.775
+DecisionTree     0.768   0.658   0.641   0.649   0.991   0.737
+====================================================================
+Paper reference (BME 2024): KNN F1~0.9541, AUC~0.95
+
+==================== SCENARIO 01 SUB 40% ====================
+====================================================================
+EMG FATIGUE CLASSIFICATION — DEMO PIPELINE
+====================================================================
+Samples (file x channel): 1651
+  Normal=1142  Fatigue=509
+  Files=26  Subjects=[np.int64(5), np.int64(7), np.int64(8), np.int64(9), np.int64(11)]
+Train subjects [5, 7, 8, 11]: 1077 samples (N=760, F=317)
+Test subject 9: 574 samples (N=382, F=192)
+--------------------------------------------------------------------
+mRMR ranking: ['Spectral_STD', 'Mean', 'Spectral_Entropy', 'MDF', 'Spectral_Max', 'Spectral_Min', 'Kurtosis', 'Skewness', 'Max', 'MNF', 'RMS', 'STD', 'Min', 'MAV']
+Top-3 (SVM): ['Spectral_STD', 'Mean', 'Spectral_Entropy']
+--------------------------------------------------------------------
+Model              Acc    Prec     Rec      F1  CV-Acc     AUC
+SVM              0.732   0.625   0.495   0.552   0.890   0.762
+KNN              0.779   0.922   0.370   0.528   0.994   0.697
+LDA              0.740   0.620   0.578   0.598   0.981   0.774
+DecisionTree     0.732   0.601   0.589   0.595   0.987   0.697
+====================================================================
+Paper reference (BME 2024): KNN F1~0.9541, AUC~0.95
+
+==================== SCENARIO 01 SUB 50% ====================
+====================================================================
+EMG FATIGUE CLASSIFICATION — DEMO PIPELINE
+====================================================================
+Samples (file x channel): 1651
+  Normal=1142  Fatigue=509
+  Files=26  Subjects=[np.int64(5), np.int64(7), np.int64(8), np.int64(9), np.int64(11)]
+Train subjects [5, 7, 8, 11]: 1077 samples (N=760, F=317)
+Test subject 9: 574 samples (N=382, F=192)
+--------------------------------------------------------------------
+mRMR ranking: ['Spectral_STD', 'Kurtosis', 'Mean', 'Spectral_Max', 'Spectral_Min', 'MDF', 'Spectral_Entropy', 'Max', 'Skewness', 'Min', 'MNF', 'STD', 'RMS', 'MAV']
+Top-3 (SVM): ['Spectral_STD', 'Kurtosis', 'Mean']
+--------------------------------------------------------------------
+Model              Acc    Prec     Rec      F1  CV-Acc     AUC
+SVM              0.876   0.992   0.635   0.775   0.921   0.719
+KNN              0.829   0.927   0.531   0.675   0.994   0.803
+LDA              0.779   0.647   0.745   0.692   0.980   0.832
+DecisionTree     0.747   0.658   0.510   0.575   0.994   0.688
+====================================================================
+Paper reference (BME 2024): KNN F1~0.9541, AUC~0.95
+

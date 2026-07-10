@@ -1,0 +1,19 @@
+====================================================================
+EMG FATIGUE CLASSIFICATION — DEMO PIPELINE
+====================================================================
+Samples (file x channel): 1651
+  Normal=888  Fatigue=763
+  Files=26  Subjects=[np.int64(5), np.int64(7), np.int64(8), np.int64(9), np.int64(11)]
+Train subjects [5, 7, 8, 11]: 1077 samples (N=570, F=507)
+Test subject 9: 574 samples (N=318, F=256)
+--------------------------------------------------------------------
+mRMR ranking: ['Spectral_Max', 'MDF', 'Spectral_Entropy', 'Spectral_STD', 'Skewness', 'Mean', 'Spectral_Min', 'Kurtosis', 'MNF', 'Min', 'Max', 'RMS', 'STD', 'MAV']
+Top-3 (SVM): ['Spectral_Max', 'MDF', 'Spectral_Entropy']
+--------------------------------------------------------------------
+Model              Acc    Prec     Rec      F1  CV-Acc     AUC
+SVM              0.822   0.964   0.625   0.758   0.935   0.805
+KNN              0.758   0.772   0.648   0.705   0.993   0.747
+LDA              0.613   0.540   0.887   0.672   0.796   0.776
+DecisionTree     0.653   0.651   0.480   0.553   0.986   0.596
+====================================================================
+Paper reference (BME 2024): KNN F1~0.9541, AUC~0.95

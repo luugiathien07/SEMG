@@ -307,8 +307,8 @@ function updateSeg(){
   const si=curSeg(), s=D.segments[si];
   document.getElementById('seg').textContent=s.label+(s.isPostFatigue?' (sau mỏi)':'');
 
-  const knn=s.predictions.find(p=>p.model==='KNN')||s.predictions[0];
-  const fat=knn.pred===1;
+  const bestModel=s.predictions.find(p=>p.model==='SVM')||s.predictions[0];
+  const fat=bestModel.pred===1;
   const stEl=document.getElementById('st');
   stEl.textContent=fat?'MỎI':'KHÔNG MỎI';
   const banner=document.getElementById('statusBanner');
@@ -349,8 +349,8 @@ function drawTrend(){
   // segment fatigue background shading + boundaries
   for(let si=0;si<D.segments.length;si++){
     const s=D.segments[si];
-    const knn=s.predictions.find(p=>p.model==='KNN')||s.predictions[0];
-    const fat=knn.pred===1;
+    const bestModel=s.predictions.find(p=>p.model==='SVM')||s.predictions[0];
+    const fat=bestModel.pred===1;
     const x0=xOf(Math.max(0,s.start)), x1=xOf(Math.min(D.totalSec,s.end));
     const clampX1=Math.min(x1, xOf(Math.min(now,D.totalSec)));
     if(clampX1>x0){

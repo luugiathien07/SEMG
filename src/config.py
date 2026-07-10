@@ -5,12 +5,13 @@ subject split live here so the rest of the pipeline stays parameter-free.
 """
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 # --- Paths -----------------------------------------------------------------
 PROJECT_ROOT = Path(__file__).resolve().parents[1]        # sEMG-demo/
-DATASET_DIR = PROJECT_ROOT / "dataset"                     # raw CSVs
-CACHE_DIR = PROJECT_ROOT / "cache"                         # cached features
+DATASET_DIR = Path(os.environ.get("DATASET_DIR", PROJECT_ROOT / "dataset" / "scenario01_sub50")) # raw CSVs
+CACHE_DIR = Path(os.environ.get("CACHE_DIR", PROJECT_ROOT / "dataset" / "scenario01_sub50" / "cache"))       # cached features
 FEATURE_CACHE = CACHE_DIR / "features.parquet"
 
 # --- Signal constants (match MATLAB Feature_Extraction.m) ------------------

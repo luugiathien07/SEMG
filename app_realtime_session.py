@@ -4,8 +4,9 @@ sEMG recordings (ascending %MVC), played back near-real-time with live
 muscle-fatigue monitoring (Usecase 1 v2,
 plans/sEMGxAI_DeXuatDemoUsecase.html).
 
-Run from the project root:
-    streamlit run app_realtime_session.py
+# Run from the project root:
+#     streamlit run app_realtime_session.py
+# (Trigger hot reload)
 """
 from __future__ import annotations
 
@@ -14,13 +15,18 @@ from pathlib import Path
 
 import streamlit as st
 
+import sys
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+import importlib
 
 from src import config                        # noqa: E402
 from src import pipeline as pl                # noqa: E402
 from src import realtime_html as rth          # noqa: E402
 from src import realtime_session as rts       # noqa: E402
 from src import session_builder as sb         # noqa: E402
+
+importlib.reload(rth) # Force reload to apply recent UI changes
 
 st.set_page_config(page_title="Demo Giám sát Mỏi cơ Near-Real-Time — PHCN", layout="wide")
 
