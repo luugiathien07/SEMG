@@ -39,6 +39,7 @@ def build_realtime_html(
     playback_duration_sec: float = 30.0,
     envelope_window_sec: float = 0.05,
     target_display_hz: int = 250,
+    model_metrics: list[dict] | None = None,
 ) -> str:
     """Build self-contained HTML for smooth client-side EMG animation.
 
@@ -72,6 +73,7 @@ def build_realtime_html(
         "trendT": trend_t,
         "trendRms": trend_rms,
         "trendMdf": trend_mdf,
+        "models": model_metrics or [],
     }
 
     return _TEMPLATE.replace('"__DATA__"', json.dumps(data))
@@ -90,12 +92,11 @@ _TEMPLATE = r"""<!DOCTYPE html>
   --red:#DC2626; --red-tint:#FEE2E2;
 }
 *{margin:0;padding:0;box-sizing:border-box}
-html,body{height:100%}
-body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;padding:8px 16px;overflow-x:hidden;overflow-y:auto}
-.title{font-size:14px;font-weight:600;margin-bottom:4px;color:var(--text)}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;padding:8px 16px 20px}
+.title{font-size:17px;font-weight:600;margin-bottom:4px;color:var(--text)}
 .chart-box{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:6px;margin-bottom:6px}
 canvas{display:block;width:100%}
-.legend{display:flex;gap:16px;font-size:11px;color:var(--text-soft);margin-top:4px;padding-left:50px}
+.legend{display:flex;gap:16px;font-size:13px;color:var(--text-soft);margin-top:4px;padding-left:50px}
 .legend span::before{content:'';display:inline-block;width:14px;height:3px;margin-right:5px;vertical-align:middle;border-radius:1px}
 .lg-raw::before{background:var(--blue)}
 .lg-proc::before{background:var(--gold)}
@@ -104,39 +105,52 @@ canvas{display:block;width:100%}
 .lg-ok::before{background:var(--green);width:10px;height:10px;border-radius:2px}
 .lg-fat::before{background:var(--red);width:10px;height:10px;border-radius:2px}
 .controls{display:flex;align-items:center;gap:10px;margin-bottom:6px}
-.tog{background:var(--card);color:var(--text-soft);border:1px solid var(--border);border-radius:4px;padding:2px 8px;font-size:11px;cursor:pointer;white-space:nowrap}
+.tog{background:var(--card);color:var(--text-soft);border:1px solid var(--border);border-radius:4px;padding:3px 9px;font-size:13px;cursor:pointer;white-space:nowrap}
 .tog.on{background:var(--gold);color:#fff;border-color:var(--gold)}
-.btn{background:var(--blue);color:#fff;border:none;border-radius:6px;padding:5px 14px;font-size:13px;cursor:pointer;font-weight:500;white-space:nowrap}
+.btn{background:var(--blue);color:#fff;border:none;border-radius:6px;padding:6px 16px;font-size:15px;cursor:pointer;font-weight:500;white-space:nowrap}
 .btn:hover{background:#2c73a8}
 .btn.paused{background:#94a3b8}
 .btn.paused:hover{background:#7c8ba0}
 .track{flex:1;height:6px;background:var(--light-blue);border-radius:3px;cursor:pointer;position:relative}
 .fill{height:100%;background:var(--blue);border-radius:3px;pointer-events:none}
-.time{font-size:12px;color:var(--text-soft);min-width:110px;text-align:right;font-variant-numeric:tabular-nums}
+.time{font-size:13px;color:var(--text-soft);min-width:110px;text-align:right;font-variant-numeric:tabular-nums}
 .spd{display:flex;gap:4px}
-.spd button{background:var(--card);color:var(--text-soft);border:1px solid var(--border);border-radius:4px;padding:2px 7px;font-size:11px;cursor:pointer}
+.spd button{background:var(--card);color:var(--text-soft);border:1px solid var(--border);border-radius:4px;padding:3px 8px;font-size:13px;cursor:pointer}
 .spd button.on{background:var(--gold);color:#fff;border-color:var(--gold)}
 
 .status-row{display:flex;gap:10px;margin-bottom:6px;flex-wrap:wrap}
 .status-banner{flex:2;min-width:220px;border-radius:10px;padding:14px 20px;border:2px solid var(--border);display:flex;flex-direction:column;justify-content:center}
 .status-banner.ok{background:var(--green-tint);border-color:var(--green)}
 .status-banner.bad{background:var(--red-tint);border-color:var(--red)}
-.status-banner .sl{font-size:12px;color:var(--text-soft);margin-bottom:2px}
-.status-banner .sv{font-size:38px;font-weight:700;line-height:1.1}
+.status-banner .sl{font-size:13px;color:var(--text-soft);margin-bottom:2px}
+.status-banner .sv{font-size:28px;font-weight:700;line-height:1.1}
 .status-banner.ok .sv{color:var(--green)}
 .status-banner.bad .sv{color:var(--red)}
 .mvc-card{flex:1;min-width:120px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;justify-content:center}
-.mvc-card .cl{font-size:12px;color:var(--text-soft);margin-bottom:2px}
-.mvc-card .cv{font-size:22px;font-weight:600;color:var(--text)}
+.mvc-card .cl{font-size:13px;color:var(--text-soft);margin-bottom:2px}
+.mvc-card .cv{font-size:24px;font-weight:600;color:var(--text)}
 
-.reco{background:var(--red-tint);border:1px solid var(--red);border-radius:6px;padding:6px 10px;font-size:12px;color:var(--red);margin-bottom:6px;display:none}
+.reco{background:var(--red-tint);border:1px solid var(--red);border-radius:6px;padding:7px 11px;font-size:13px;color:var(--red);margin-bottom:6px;display:none}
 
 .section-toggle{display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none}
 .arrow{width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:6px solid var(--text-soft);transition:transform .2s}
 .arrow.open{transform:rotate(180deg)}
-.ptbl{width:100%;border-collapse:collapse;font-size:12px;margin-top:6px}
-.ptbl th{text-align:left;padding:5px 10px;border-bottom:1px solid var(--border);color:var(--text-soft);font-weight:500}
-.ptbl td{padding:5px 10px;border-bottom:1px solid var(--border)}
+.ptbl{width:100%;border-collapse:collapse;font-size:13px;margin-top:6px}
+.ptbl th{text-align:left;padding:6px 10px;border-bottom:1px solid var(--border);color:var(--text-soft);font-weight:500}
+.ptbl td{padding:6px 10px;border-bottom:1px solid var(--border)}
+
+.mtbl{width:100%;border-collapse:collapse;font-size:13px;margin-top:6px;margin-bottom:14px}
+.mtbl th{text-align:left;padding:7px 10px;border-bottom:1px solid var(--border);color:var(--text-soft);font-weight:500;white-space:nowrap}
+.mtbl td{padding:7px 10px;border-bottom:1px solid var(--border);white-space:nowrap}
+.mtbl td.mname{font-weight:600;color:var(--text)}
+.cm-wrap{display:flex;gap:16px;justify-content:space-between;margin-top:4px}
+.cm-block{flex:1;min-width:0;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px}
+.cm-title{font-size:15px;font-weight:600;color:var(--text);margin-bottom:8px;text-align:center}
+.cm-grid{display:grid;grid-template-columns:auto repeat(2,1fr);gap:4px;font-size:14px;text-align:center}
+.cm-grid .hd{color:var(--text-soft);display:flex;align-items:center;justify-content:center;font-size:12px;padding:2px}
+.cm-grid .cell{padding:16px 4px;border-radius:6px;font-weight:700;font-size:22px}
+.cm-grid .cell.tn,.cm-grid .cell.tp{background:var(--green-tint);color:var(--green)}
+.cm-grid .cell.fp,.cm-grid .cell.fn{background:var(--red-tint);color:var(--red)}
 </style>
 </head>
 <body>
@@ -186,12 +200,24 @@ canvas{display:block;width:100%}
   </div>
 </div>
 
-<div class="title section-toggle" onclick="togDetail()">
+<div class="title section-toggle" onclick="togSection('detailBody','detailArrow')">
   3. Chi tiết dự đoán theo model (giai đoạn hiện tại)
   <span class="arrow" id="detailArrow"></span>
 </div>
 <div id="detailBody" style="display:none">
   <table class="ptbl" id="ptbl"><thead><tr><th>Model</th><th>Dự đoán</th><th>P(Fatigue)</th></tr></thead><tbody></tbody></table>
+</div>
+
+<div class="title section-toggle" onclick="togSection('metricsBody','metricsArrow')">
+  4. Kết quả phân loại của các mô hình (Classification results)
+  <span class="arrow" id="metricsArrow"></span>
+</div>
+<div id="metricsBody" style="display:none">
+  <table class="mtbl" id="mtbl">
+    <thead><tr><th>Model</th><th>Accuracy</th><th>Precision</th><th>Recall</th><th>F1</th><th>CV-Acc</th><th>AUC</th></tr></thead>
+    <tbody></tbody>
+  </table>
+  <div class="cm-wrap" id="cmWrap"></div>
 </div>
 
 <script>
@@ -216,7 +242,7 @@ function setupCanvas(c,h){
 function init(){
   [wCtx,wW,wH]=setupCanvas(document.getElementById('wave'),300);
   [tCtx,tW,tH]=setupCanvas(document.getElementById('trend'),170);
-  drawWave(); drawTrend(); updateSeg(); updateProg();
+  drawWave(); drawTrend(); updateSeg(); updateProg(); renderMetrics();
 }
 
 function drawWave(){
@@ -233,7 +259,7 @@ function drawWave(){
   for(let i=0;i<=6;i++){const x=L+i/6*pW; ctx.beginPath();ctx.moveTo(x,T);ctx.lineTo(x,T+pH);ctx.stroke();}
 
   // x labels
-  ctx.fillStyle='#64748B'; ctx.font='12px sans-serif'; ctx.textAlign='center';
+  ctx.fillStyle='#64748B'; ctx.font='13px sans-serif'; ctx.textAlign='center';
   for(let i=0;i<=6;i++) ctx.fillText((t0+i/6*(t1-t0)).toFixed(1)+'s', L+i/6*pW, h-5);
   // y labels
   ctx.textAlign='right';
@@ -264,7 +290,7 @@ function drawWave(){
     if(s.start>t0&&s.start<t1){
       const x=L+((s.start-t0)/(t1-t0))*pW;
       ctx.beginPath();ctx.moveTo(x,T);ctx.lineTo(x,T+pH);ctx.stroke();
-      ctx.fillStyle='rgba(30,41,59,.5)'; ctx.textAlign='left'; ctx.font='11px sans-serif';
+      ctx.fillStyle='rgba(30,41,59,.5)'; ctx.textAlign='left'; ctx.font='12px sans-serif';
       ctx.fillText(s.label+(s.isPostFatigue?' (sau mỏi)':''), x+3, T+14);
     }
   }
@@ -317,7 +343,7 @@ function drawTrend(){
   for(let i=0;i<=6;i++){const x=L+i/6*pW; ctx.beginPath();ctx.moveTo(x,T);ctx.lineTo(x,T+pH);ctx.stroke();}
 
   // x labels
-  ctx.fillStyle='#64748B'; ctx.font='10px sans-serif'; ctx.textAlign='center';
+  ctx.fillStyle='#64748B'; ctx.font='11px sans-serif'; ctx.textAlign='center';
   for(let i=0;i<=6;i++){const t=i/6*D.totalSec; ctx.fillText(t.toFixed(0)+'s', L+i/6*pW, h-5);}
 
   // segment fatigue background shading + boundaries
@@ -337,7 +363,7 @@ function drawTrend(){
       ctx.beginPath();ctx.moveTo(bx,T);ctx.lineTo(bx,T+pH);ctx.stroke();
       ctx.setLineDash([]);
       if(clampX1>=xOf(s.start)){
-        ctx.fillStyle='rgba(30,41,59,.45)'; ctx.font='9px sans-serif'; ctx.textAlign='center';
+        ctx.fillStyle='rgba(30,41,59,.45)'; ctx.font='10px sans-serif'; ctx.textAlign='center';
         ctx.fillText(s.label, xOf((s.start+Math.min(s.end,D.totalSec))/2), T+12);
       }
     }
@@ -366,7 +392,7 @@ function drawTrend(){
   ctx.beginPath();ctx.moveTo(cx,T);ctx.lineTo(cx,T+pH);ctx.stroke();
 
   // axis titles
-  ctx.font='11px sans-serif';
+  ctx.font='12px sans-serif';
   ctx.fillStyle='#DC2626'; ctx.textAlign='right'; ctx.fillText('RMS', L-5, T-6);
   ctx.fillStyle='#348AC9'; ctx.textAlign='left'; ctx.fillText('MDF (Hz)', w-R+5, T-6);
 }
@@ -402,12 +428,33 @@ function togProc(){
   drawWave();
 }
 
-function togDetail(){
-  const body=document.getElementById('detailBody');
-  const arrow=document.getElementById('detailArrow');
+function togSection(bodyId,arrowId){
+  const body=document.getElementById(bodyId);
+  const arrow=document.getElementById(arrowId);
   const open=body.style.display==='none';
   body.style.display=open?'block':'none';
   arrow.classList.toggle('open',open);
+}
+
+function pct(v){ return v==null?'—':(v*100).toFixed(1)+'%'; }
+
+function renderMetrics(){
+  const tb=document.querySelector('#mtbl tbody');
+  tb.innerHTML=D.models.map(m=>
+    '<tr><td class="mname">'+m.name+'</td><td>'+pct(m.accuracy)+'</td><td>'+pct(m.precision)+
+    '</td><td>'+pct(m.recall)+'</td><td>'+pct(m.f1)+'</td><td>'+pct(m.cvAccuracy)+'</td><td>'+pct(m.auc)+'</td></tr>'
+  ).join('');
+
+  const wrap=document.getElementById('cmWrap');
+  wrap.innerHTML=D.models.map(m=>{
+    const c=m.confusion; // [[TN,FP],[FN,TP]]
+    return '<div class="cm-block"><div class="cm-title">'+m.name+'</div>'+
+      '<div class="cm-grid">'+
+      '<div class="hd"></div><div class="hd">Dự đoán: Normal</div><div class="hd">Dự đoán: Fatigue</div>'+
+      '<div class="hd">Thực: Normal</div><div class="cell tn">'+c[0][0]+'</div><div class="cell fp">'+c[0][1]+'</div>'+
+      '<div class="hd">Thực: Fatigue</div><div class="cell fn">'+c[1][0]+'</div><div class="cell tp">'+c[1][1]+'</div>'+
+      '</div></div>';
+  }).join('');
 }
 
 function seek(e){

@@ -108,11 +108,26 @@ if st.session_state["session_started"]:
                 "mdf": round(float(assess.mdf), 2),
                 "predictions": assess.predictions,
             })
+        model_metrics = [
+            {
+                "name": r.name,
+                "accuracy": round(float(r.accuracy), 4),
+                "precision": round(float(r.precision), 4),
+                "recall": round(float(r.recall), 4),
+                "f1": round(float(r.f1), 4),
+                "cvAccuracy": round(float(r.cv_accuracy), 4),
+                "auc": round(float(r.auc), 4) if r.auc is not None else None,
+                "confusion": r.confusion.tolist(),
+            }
+            for r in results
+        ]
+
         total_sec = len(signal) / config.FS
         st.session_state["_rt_html"] = rth.build_realtime_html(
             signal, segments_info, config.FS,
             display_window_sec=DISPLAY_WINDOW_SEC,
             playback_duration_sec=total_sec,
+            model_metrics=model_metrics,
         )
 
-    st.iframe(st.session_state["_rt_html"], height=680)
+    st.iframe(st.session_state["_rt_html"], height="content")
