@@ -42,7 +42,7 @@ from sklearn.model_selection import GridSearchCV, StratifiedKFold, cross_val_pre
 from . import config
 from .models import ModelSpec
 
-FBETA = 1.5   # >1 -> weigh Recall over Precision (see module docstring)
+FBETA = 2.0   # >1 -> weigh Recall over Precision (see module docstring)
 _fbeta_scorer = make_scorer(fbeta_score, beta=FBETA, pos_label=1, zero_division=0)
 
 
