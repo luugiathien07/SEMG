@@ -70,9 +70,9 @@ valid_channels = get_valid_channels(SUBJECT)
 with col_sel2:
     channel = st.selectbox("Kênh EMG", valid_channels, format_func=lambda i: f"Kênh {i}")
 with col_btn1:
-    start = st.button("▶ Bắt đầu mô phỏng buổi tập", type="primary")
+    start = st.button("Bắt đầu mô phỏng buổi tập", type="primary")
 with col_btn2:
-    reset = st.button("⟲ Reset")
+    reset = st.button("Đặt lại")
 
 if "session_started" not in st.session_state:
     st.session_state["session_started"] = False
@@ -115,4 +115,4 @@ if st.session_state["session_started"]:
             playback_duration_sec=total_sec,
         )
 
-    st.iframe(st.session_state["_rt_html"], height=760)
+    st.iframe(st.session_state["_rt_html"], height=680)
