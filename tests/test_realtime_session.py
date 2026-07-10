@@ -8,7 +8,10 @@ from src import config as cfg
 from src import data_loader as dl
 from src.evaluate import ModelResult
 from src.session_builder import SegmentInfo
-from src.realtime_session import rectify_envelope, PlaybackStep, build_playback_steps, SegmentAssessment, assess_segments
+from src.realtime_session import (
+    rectify_envelope, PlaybackStep, build_playback_steps, SegmentAssessment,
+    assess_segments, best_model_name,
+)
 
 
 def _fake_segments() -> list[SegmentInfo]:
@@ -18,6 +21,28 @@ def _fake_segments() -> list[SegmentInfo]:
         SegmentInfo(file=f1, mvc=10, start_sample=0, end_sample=3000),
         SegmentInfo(file=f2, mvc=20, start_sample=3000, end_sample=6000),
     ]
+
+
+def _fake_result(name, f1):
+    return ModelResult(
+        name=name, accuracy=0.9, precision=0.9, recall=0.9, f1=f1,
+        cv_accuracy=0.9, auc=None, confusion=np.zeros((2, 2)),
+        features_used=cfg.FEATURE_NAMES, fitted_estimator=None, threshold=0.5,
+    )
+
+
+class TestBestModelName:
+    def test_picks_highest_f1(self):
+        results = [_fake_result("SVM", 0.70), _fake_result("KNN", 0.85), _fake_result("LDA", 0.60)]
+        assert best_model_name(results) == "KNN"
+
+    def test_single_model(self):
+        results = [_fake_result("DecisionTree", 0.5)]
+        assert best_model_name(results) == "DecisionTree"
+
+    def test_tie_breaks_to_first(self):
+        results = [_fake_result("SVM", 0.8), _fake_result("KNN", 0.8)]
+        assert best_model_name(results) == "SVM"
 
 
 class TestRectifyEnvelope:

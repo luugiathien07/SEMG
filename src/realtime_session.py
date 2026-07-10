@@ -15,6 +15,15 @@ from .evaluate import ModelResult
 from .session_builder import SegmentInfo
 
 
+def best_model_name(results: list[ModelResult]) -> str:
+    """Name of the model with the highest F1 on the held-out subject — F1
+    balances Precision/Recall, so this is what the demo status banner and
+    trend shading use instead of a hardcoded model name, letting the "best"
+    model change automatically whenever the pipeline is retrained.
+    """
+    return max(results, key=lambda r: r.f1).name
+
+
 def rectify_envelope(x: np.ndarray, envelope_samples: int) -> np.ndarray:
     """Full-wave rectify + moving-average envelope, for display only."""
     envelope_samples = max(1, int(envelope_samples))

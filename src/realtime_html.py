@@ -40,6 +40,7 @@ def build_realtime_html(
     envelope_window_sec: float = 0.05,
     target_display_hz: int = 250,
     model_metrics: list[dict] | None = None,
+    best_model: str = "",
 ) -> str:
     """Build self-contained HTML for smooth client-side EMG animation.
 
@@ -74,6 +75,7 @@ def build_realtime_html(
         "trendRms": trend_rms,
         "trendMdf": trend_mdf,
         "models": model_metrics or [],
+        "bestModel": best_model,
     }
 
     return _TEMPLATE.replace('"__DATA__"', json.dumps(data))
@@ -123,6 +125,7 @@ canvas{display:block;width:100%}
 .status-banner.ok{background:var(--green-tint);border-color:var(--green)}
 .status-banner.bad{background:var(--red-tint);border-color:var(--red)}
 .status-banner .sl{font-size:13px;color:var(--text-soft);margin-bottom:2px}
+.status-banner .sl #stModel{font-weight:500}
 .status-banner .sv{font-size:28px;font-weight:700;line-height:1.1}
 .status-banner.ok .sv{color:var(--green)}
 .status-banner.bad .sv{color:var(--red)}
@@ -143,8 +146,8 @@ canvas{display:block;width:100%}
 .mtbl th{text-align:left;padding:7px 10px;border-bottom:1px solid var(--border);color:var(--text-soft);font-weight:500;white-space:nowrap}
 .mtbl td{padding:7px 10px;border-bottom:1px solid var(--border);white-space:nowrap}
 .mtbl td.mname{font-weight:600;color:var(--text)}
-.cm-wrap{display:flex;gap:16px;justify-content:space-between;margin-top:4px}
-.cm-block{flex:1;min-width:0;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px}
+.cm-wrap{display:flex;gap:16px;flex-wrap:wrap;margin-top:4px}
+.cm-block{flex:1;min-width:180px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px}
 .cm-title{font-size:15px;font-weight:600;color:var(--text);margin-bottom:8px;text-align:center}
 .cm-grid{display:grid;grid-template-columns:auto repeat(2,1fr);gap:4px;font-size:14px;text-align:center}
 .cm-grid .hd{color:var(--text-soft);display:flex;align-items:center;justify-content:center;font-size:12px;padding:2px}
@@ -179,7 +182,7 @@ canvas{display:block;width:100%}
 
 <div class="status-row">
   <div class="status-banner" id="statusBanner">
-    <div class="sl">Trạng thái</div>
+    <div class="sl">Trạng thái <span id="stModel"></span></div>
     <div class="sv" id="st">—</div>
   </div>
   <div class="mvc-card">
@@ -213,10 +216,12 @@ canvas{display:block;width:100%}
   <span class="arrow" id="metricsArrow"></span>
 </div>
 <div id="metricsBody" style="display:none">
+  <div style="overflow-x:auto">
   <table class="mtbl" id="mtbl">
     <thead><tr><th>Model</th><th>Accuracy</th><th>Precision</th><th>Recall</th><th>F1</th><th>CV-Acc</th><th>AUC</th></tr></thead>
     <tbody></tbody>
   </table>
+  </div>
   <div class="cm-wrap" id="cmWrap"></div>
 </div>
 
@@ -242,6 +247,7 @@ function setupCanvas(c,h){
 function init(){
   [wCtx,wW,wH]=setupCanvas(document.getElementById('wave'),300);
   [tCtx,tW,tH]=setupCanvas(document.getElementById('trend'),170);
+  document.getElementById('stModel').textContent=D.bestModel?'('+D.bestModel+')':'';
   drawWave(); drawTrend(); updateSeg(); updateProg(); renderMetrics();
 }
 
@@ -307,8 +313,8 @@ function updateSeg(){
   const si=curSeg(), s=D.segments[si];
   document.getElementById('seg').textContent=s.label+(s.isPostFatigue?' (sau mỏi)':'');
 
-  const bestModel=s.predictions.find(p=>p.model==='SVM')||s.predictions[0];
-  const fat=bestModel.pred===1;
+  const chosen=s.predictions.find(p=>p.model===D.bestModel)||s.predictions[0];
+  const fat=chosen.pred===1;
   const stEl=document.getElementById('st');
   stEl.textContent=fat?'MỎI':'KHÔNG MỎI';
   const banner=document.getElementById('statusBanner');
@@ -349,8 +355,8 @@ function drawTrend(){
   // segment fatigue background shading + boundaries
   for(let si=0;si<D.segments.length;si++){
     const s=D.segments[si];
-    const bestModel=s.predictions.find(p=>p.model==='SVM')||s.predictions[0];
-    const fat=bestModel.pred===1;
+    const chosen=s.predictions.find(p=>p.model===D.bestModel)||s.predictions[0];
+    const fat=chosen.pred===1;
     const x0=xOf(Math.max(0,s.start)), x1=xOf(Math.min(D.totalSec,s.end));
     const clampX1=Math.min(x1, xOf(Math.min(now,D.totalSec)));
     if(clampX1>x0){
