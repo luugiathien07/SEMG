@@ -1,0 +1,45 @@
+{
+  "knn_f1": 0.928,
+  "sessions": [
+    {
+      "session": 1,
+      "endurance_sec": 4.5,
+      "pct_nonfatigue": 17.2
+    },
+    {
+      "session": 2,
+      "endurance_sec": 9.0,
+      "pct_nonfatigue": 36.2
+    },
+    {
+      "session": 3,
+      "endurance_sec": 12.5,
+      "pct_nonfatigue": 41.4
+    },
+    {
+      "session": 4,
+      "endurance_sec": 12.5,
+      "pct_nonfatigue": 41.4
+    },
+    {
+      "session": 5,
+      "endurance_sec": 16.5,
+      "pct_nonfatigue": 55.2
+    },
+    {
+      "session": 6,
+      "endurance_sec": 14.5,
+      "pct_nonfatigue": 55.2
+    },
+    {
+      "session": 7,
+      "endurance_sec": 18.5,
+      "pct_nonfatigue": 74.1
+    },
+    {
+      "session": 8,
+      "endurance_sec": 23.0,
+      "pct_nonfatigue": 81.0
+    }
+  ]
+}

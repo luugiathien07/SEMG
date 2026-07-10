@@ -15,6 +15,7 @@ Streamlit và cách trình bày kết quả demo với mentor.
 | 5 | [05-chi-so-danh-gia.md](05-chi-so-danh-gia.md) | Confusion matrix, Accuracy/Precision/Recall/F1/AUC, cross-validation |
 | 6 | [06-huong-dan-doc-streamlit.md](06-huong-dan-doc-streamlit.md) | Giải thích từng tab và từng biểu đồ trên ứng dụng demo |
 | 7 | [07-giai-thich-ket-qua-cho-mentor.md](07-giai-thich-ket-qua-cho-mentor.md) | Diễn giải kết quả demo, điểm mạnh/hạn chế, kịch bản trình bày & Q&A |
+| 9 | [09-so-do-kenh-va-mfcv.md](09-so-do-kenh-va-mfcv.md) | Sơ đồ ma trận điện cực 64 kênh (13×5, IED 8mm) và câu hỏi có tính được MFCV (vận tốc dẫn truyền sợi cơ) từ EMG không |
 
 ## Tóm tắt nhanh (1 phút)
 
