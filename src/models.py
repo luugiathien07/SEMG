@@ -5,20 +5,10 @@ handles the Fatigue/Normal class imbalance and a hyperparameter grid for
 ``evaluate.evaluate_model`` to tune via GridSearchCV on the training subjects
 only (never on the held-out test subject):
 
-- SVM         : top-3 mRMR features; ``class_weight="balanced"``; tunes C
-                (kernel fixed to linear — an rbf/high-C variant was tried but
-                overfit the channel-level CV folds, since 2 of the 4 train
-                subjects have zero Fatigue channels and can't be grouped for
-                a subject-level CV; it scored well in-CV but badly on the
-                held-out subject, so it was dropped).
-- KNN         : all 14 features; no ``class_weight`` support, so the Fatigue
-                class is oversampled with SMOTE (synthetic interpolated
-                samples, not plain duplication) inside the training fold
-                only; tunes n_neighbors/weights.
-- LDA         : all 14 features; equal ``priors`` instead of empirical
-                frequencies; tunes solver/shrinkage.
-- DecisionTree: all 14 features; ``class_weight="balanced"``; tunes tree
-                size (max_leaf_nodes/max_depth/min_samples_leaf) + criterion.
+- SVM         : top-3 mRMR features; oversampled with SMOTE; tunes C (kernel fixed to linear).
+- KNN         : all 14 features; oversampled with SMOTE; tunes n_neighbors/weights.
+- LDA         : all 14 features; oversampled with SMOTE; tunes solver/shrinkage.
+- DecisionTree: all 14 features; oversampled with SMOTE; tunes tree size.
 
 "RF" in the MATLAB code is actually a single decision tree (``fitctree``), so it
 is named DecisionTree here.
@@ -56,10 +46,11 @@ def build_models() -> list[ModelSpec]:
     return [
         ModelSpec(
             name="SVM",
-            estimator=Pipeline([
+            estimator=ImbPipeline([
+                ("oversample", SMOTE(random_state=config.RANDOM_STATE)),
                 ("scale", StandardScaler()),
                 ("clf", CalibratedClassifierCV(
-                    SVC(class_weight="balanced", random_state=config.RANDOM_STATE),
+                    SVC(random_state=config.RANDOM_STATE),
                     ensemble=False)),
             ]),
             feature_set="top3",
@@ -83,27 +74,30 @@ def build_models() -> list[ModelSpec]:
         ),
         ModelSpec(
             name="LDA",
-            estimator=LinearDiscriminantAnalysis(priors=[0.5, 0.5]),
+            estimator=ImbPipeline([
+                ("oversample", SMOTE(random_state=config.RANDOM_STATE)),
+                ("clf", LinearDiscriminantAnalysis()),
+            ]),
             feature_set="all",
             supports_proba=True,
             param_grid=[
-                {"solver": ["svd"]},
-                {"solver": ["lsqr"], "shrinkage": ["auto", None, 0.1, 0.3, 0.5, 0.7]},
+                {"clf__solver": ["svd"]},
+                {"clf__solver": ["lsqr"], "clf__shrinkage": ["auto", None, 0.1, 0.3, 0.5, 0.7]},
             ],
         ),
         ModelSpec(
             name="DecisionTree",
-            estimator=DecisionTreeClassifier(
-                class_weight="balanced",
-                random_state=config.RANDOM_STATE,
-            ),
+            estimator=ImbPipeline([
+                ("oversample", SMOTE(random_state=config.RANDOM_STATE)),
+                ("clf", DecisionTreeClassifier(random_state=config.RANDOM_STATE)),
+            ]),
             feature_set="all",
             supports_proba=True,
             param_grid={
-                "criterion": ["gini", "entropy"],
-                "max_leaf_nodes": [11, 21, 31, None],
-                "max_depth": [None, 5, 10],
-                "min_samples_leaf": [1, 2, 4],
+                "clf__criterion": ["gini", "entropy"],
+                "clf__max_leaf_nodes": [11, 21, 31, None],
+                "clf__max_depth": [None, 5, 10],
+                "clf__min_samples_leaf": [1, 2, 4],
             },
         ),
     ]
