@@ -83,19 +83,21 @@ _TEMPLATE = r"""<!DOCTYPE html>
 <meta charset="utf-8">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{background:#0d1117;color:#e6edf3;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;padding:12px 16px;overflow-x:hidden}
-.title{font-size:15px;font-weight:600;margin-bottom:6px;color:#f0f6fc}
-.chart-box{background:#161b22;border:1px solid #30363d;border-radius:8px;padding:8px;margin-bottom:10px}
+body{background:#0d1117;color:#e6edf3;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;padding:8px 16px;overflow-x:hidden}
+.title{font-size:14px;font-weight:600;margin-bottom:4px;color:#f0f6fc}
+.chart-box{background:#161b22;border:1px solid #30363d;border-radius:8px;padding:6px;margin-bottom:6px}
 canvas{display:block;width:100%}
 .legend{display:flex;gap:16px;font-size:11px;color:#8b949e;margin-top:4px;padding-left:50px}
 .legend span::before{content:'';display:inline-block;width:14px;height:3px;margin-right:5px;vertical-align:middle;border-radius:1px}
-.lg-raw::before{background:rgba(91,155,213,.6)}
+.lg-raw::before{background:rgba(91,155,213,.85)}
 .lg-proc::before{background:#F39C12}
 .lg-rms::before{background:#E74C3C}
 .lg-mdf::before{background:#3498DB}
-.lg-ok::before{background:rgba(63,185,80,.35);width:10px;height:10px;border-radius:2px}
-.lg-fat::before{background:rgba(248,81,73,.35);width:10px;height:10px;border-radius:2px}
-.controls{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.lg-ok::before{background:rgba(63,185,80,.6);width:10px;height:10px;border-radius:2px}
+.lg-fat::before{background:rgba(248,81,73,.6);width:10px;height:10px;border-radius:2px}
+.controls{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.tog{background:#21262d;color:#c9d1d9;border:1px solid #30363d;border-radius:4px;padding:2px 8px;font-size:11px;cursor:pointer;white-space:nowrap}
+.tog.on{background:#F39C12;color:#000;border-color:#F39C12}
 .btn{background:#238636;color:#fff;border:none;border-radius:6px;padding:5px 14px;font-size:13px;cursor:pointer;font-weight:500;white-space:nowrap}
 .btn:hover{background:#2ea043}
 .btn.paused{background:#da3633}
@@ -106,14 +108,12 @@ canvas{display:block;width:100%}
 .spd{display:flex;gap:4px}
 .spd button{background:#21262d;color:#c9d1d9;border:1px solid #30363d;border-radius:4px;padding:2px 7px;font-size:11px;cursor:pointer}
 .spd button.on{background:#388bfd;color:#fff;border-color:#388bfd}
-.cards{display:flex;gap:10px;margin-bottom:10px;flex-wrap:wrap}
-.card{flex:1;min-width:120px;background:#161b22;border:1px solid #30363d;border-radius:8px;padding:10px 14px}
-.card .cl{font-size:11px;color:#8b949e;margin-bottom:2px}
-.card .cv{font-size:18px;font-weight:600}
+.cards{display:flex;gap:8px;margin-bottom:6px;flex-wrap:wrap}
+.card{flex:1;min-width:100px;background:#161b22;border:1px solid #30363d;border-radius:8px;padding:7px 12px}
+.card .cl{font-size:10px;color:#8b949e;margin-bottom:1px}
+.card .cv{font-size:16px;font-weight:600}
 .ok{color:#3fb950}.bad{color:#f85149}
-.reco{background:#f8514922;border:1px solid #f8514944;border-radius:6px;padding:8px 12px;font-size:13px;color:#f85149;margin-bottom:10px;display:none}
-details{margin-top:6px}
-summary{cursor:pointer;color:#8b949e;font-size:12px;user-select:none}
+.reco{background:#f8514922;border:1px solid #f8514944;border-radius:6px;padding:6px 10px;font-size:12px;color:#f85149;margin-bottom:6px;display:none}
 .ptbl{width:100%;border-collapse:collapse;font-size:12px;margin-top:6px}
 .ptbl th{text-align:left;padding:5px 10px;border-bottom:1px solid #30363d;color:#8b949e;font-weight:500}
 .ptbl td{padding:5px 10px;border-bottom:1px solid #21262d}
@@ -132,6 +132,7 @@ summary{cursor:pointer;color:#8b949e;font-size:12px;user-select:none}
 
 <div class="controls">
   <button class="btn" id="playBtn" onclick="toggle()">▶ Phát</button>
+  <button class="tog on" id="togEnv" onclick="togProc()">Envelope</button>
   <div class="track" id="track" onclick="seek(event)"><div class="fill" id="fill"></div></div>
   <span class="time" id="tm">0.0s / 0.0s</span>
   <div class="spd">
@@ -159,15 +160,13 @@ summary{cursor:pointer;color:#8b949e;font-size:12px;user-select:none}
   </div>
 </div>
 
-<details>
-  <summary>③ Chi tiết dự đoán theo model (giai đoạn hiện tại)</summary>
-  <table class="ptbl" id="ptbl"><thead><tr><th>Model</th><th>Dự đoán</th><th>P(Fatigue)</th></tr></thead><tbody></tbody></table>
-</details>
+<div class="title">③ Chi tiết dự đoán theo model (giai đoạn hiện tại)</div>
+<table class="ptbl" id="ptbl"><thead><tr><th>Model</th><th>Dự đoán</th><th>P(Fatigue)</th></tr></thead><tbody></tbody></table>
 
 <script>
 const D = "__DATA__";
 
-let playing=false, curT=0, lastTs=null, sf=1;
+let playing=false, curT=0, lastTs=null, sf=1, showProc=true;
 const baseSpd=D.totalSec/D.playbackDuration;
 const maxT=D.totalSec-D.displayWindow;
 
@@ -184,8 +183,8 @@ function setupCanvas(c,h){
 }
 
 function init(){
-  [wCtx,wW,wH]=setupCanvas(document.getElementById('wave'),240);
-  [tCtx,tW,tH]=setupCanvas(document.getElementById('trend'),170);
+  [wCtx,wW,wH]=setupCanvas(document.getElementById('wave'),200);
+  [tCtx,tW,tH]=setupCanvas(document.getElementById('trend'),150);
   drawWave(); drawTrend(); updateSeg(); updateProg();
 }
 
@@ -215,16 +214,18 @@ function drawWave(){
   const yOf=v=>T+((y1-v)/(y1-y0))*pH;
 
   // raw
-  ctx.strokeStyle='rgba(91,155,213,.5)'; ctx.lineWidth=1;
+  ctx.strokeStyle='rgba(91,155,213,.85)'; ctx.lineWidth=1.2;
   ctx.beginPath();
   for(let i=i0;i<i1;i++){const x=xOf(i),y=yOf(D.raw[i]); i===i0?ctx.moveTo(x,y):ctx.lineTo(x,y);}
   ctx.stroke();
 
-  // processed
-  ctx.strokeStyle='#F39C12'; ctx.lineWidth=2;
-  ctx.beginPath();
-  for(let i=i0;i<i1;i++){const x=xOf(i),y=yOf(D.proc[i]); i===i0?ctx.moveTo(x,y):ctx.lineTo(x,y);}
-  ctx.stroke();
+  // processed (rectified envelope)
+  if(showProc){
+    ctx.strokeStyle='#F39C12'; ctx.lineWidth=2;
+    ctx.beginPath();
+    for(let i=i0;i<i1;i++){const x=xOf(i),y=yOf(D.proc[i]); i===i0?ctx.moveTo(x,y):ctx.lineTo(x,y);}
+    ctx.stroke();
+  }
 
   // segment boundaries
   ctx.strokeStyle='rgba(255,255,255,.25)'; ctx.setLineDash([5,5]); ctx.lineWidth=1;
@@ -295,7 +296,7 @@ function drawTrend(){
     const x0=xOf(Math.max(0,s.start)), x1=xOf(Math.min(D.totalSec,s.end));
     const clampX1=Math.min(x1, xOf(Math.min(now,D.totalSec)));
     if(clampX1>x0){
-      ctx.fillStyle=fat?'rgba(248,81,73,.12)':'rgba(63,185,80,.07)';
+      ctx.fillStyle=fat?'rgba(248,81,73,.28)':'rgba(63,185,80,.18)';
       ctx.fillRect(x0,T,clampX1-x0,pH);
     }
     if(s.start>0&&s.start<D.totalSec){
@@ -361,6 +362,12 @@ function spd(s,el){
   sf=s;
   document.querySelectorAll('.spd button').forEach(b=>b.classList.remove('on'));
   el.classList.add('on');
+}
+
+function togProc(){
+  showProc=!showProc;
+  document.getElementById('togEnv').classList.toggle('on',showProc);
+  drawWave();
 }
 
 function seek(e){

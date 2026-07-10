@@ -50,7 +50,9 @@ def get_valid_channels(subject: int):
 
 st.title("Giám sát Mỏi cơ")
 
-col_sel1, col_sel2, col_btn1, col_btn2 = st.columns([2, 2, 1.4, 1])
+col_sel1, col_sel2, col_btn1, col_btn2 = st.columns(
+    [2, 2, 1.4, 1], vertical_alignment="bottom",
+)
 with col_sel1:
     muscle = st.selectbox(
         "Nhóm cơ", list(MUSCLE_OPTIONS.keys()),
@@ -68,10 +70,8 @@ valid_channels = get_valid_channels(SUBJECT)
 with col_sel2:
     channel = st.selectbox("Kênh EMG", valid_channels, format_func=lambda i: f"Kênh {i}")
 with col_btn1:
-    st.write("")
     start = st.button("▶ Bắt đầu mô phỏng buổi tập", type="primary")
 with col_btn2:
-    st.write("")
     reset = st.button("⟲ Reset")
 
 if "session_started" not in st.session_state:
@@ -115,4 +115,4 @@ if st.session_state["session_started"]:
             playback_duration_sec=total_sec,
         )
 
-    st.iframe(st.session_state["_rt_html"], height=820)
+    st.iframe(st.session_state["_rt_html"], height=760)
