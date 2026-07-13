@@ -62,6 +62,15 @@ def get_valid_channels(subject: int):
     return sb.common_valid_channels(subject)
 
 
+@st.cache_data(show_spinner="Đang đánh giá mỏi cho từng kênh (64 kênh)…")
+def get_channel_preds(subject: int, best_model: str):
+    results = get_results()
+    _, segments = get_session(subject)
+    valid_channels = get_valid_channels(subject)
+    model_result = next(r for r in results if r.name == best_model)
+    return rts.assess_channel_grid(segments, valid_channels, model_result)
+
+
 def _segment_label(seg) -> str:
     suffix = " (sau mỏi)" if sb.is_post_fatigue(seg.file.condition) else ""
     return f"{seg.mvc}%{suffix}"
@@ -110,9 +119,7 @@ def _render_realtime_tab() -> None:
                 DEMO_MODEL if any(r.name == DEMO_MODEL for r in results)
                 else rts.best_model_name(results)
             )
-            model_result = next(r for r in results if r.name == best_model)
-            valid_channels = get_valid_channels(SUBJECT)
-            channel_preds = rts.assess_channel_grid(segments, valid_channels, model_result)
+            channel_preds = get_channel_preds(SUBJECT, best_model)
 
             segments_info = []
             for seg, assess, ch_preds in zip(segments, assessments, channel_preds):
