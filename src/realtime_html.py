@@ -137,7 +137,6 @@ canvas{display:block;width:100%}
 .status-banner.ok{background:var(--green-tint);border-color:var(--green)}
 .status-banner.bad{background:var(--red-tint);border-color:var(--red)}
 .status-banner .sl{font-size:13px;color:var(--text-soft);margin-bottom:2px}
-.status-banner .sl #stModel{font-weight:500}
 .status-banner .sv{font-size:28px;font-weight:700;line-height:1.1}
 .status-banner.ok .sv{color:var(--green)}
 .status-banner.bad .sv{color:var(--red)}
@@ -205,7 +204,7 @@ canvas{display:block;width:100%}
 
 <div class="status-row">
   <div class="status-banner" id="statusBanner">
-    <div class="sl">Trạng thái <span id="stModel"></span></div>
+    <div class="sl">Trạng thái</div>
     <div class="sv" id="st">—</div>
   </div>
   <div class="mvc-card">
@@ -271,7 +270,6 @@ function init(){
   [wCtx,wW,wH]=setupCanvas(document.getElementById('wave'),300);
   [tCtx,tW,tH]=setupCanvas(document.getElementById('trend'),170);
   [cCtx,cW,cH]=setupCanvas(document.getElementById('chmap'),300);
-  document.getElementById('stModel').textContent=D.bestModel?'('+D.bestModel+')':'';
   drawWave(); drawTrend(); drawChannelMap(); updateSeg(); updateProg(); renderMetrics();
 }
 
