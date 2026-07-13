@@ -36,10 +36,11 @@ Pipeline gồm 4 bước:
    Việc chọn đặc trưng chỉ fit trên tập train để tránh rò rỉ dữ liệu.
 3. **Huấn luyện & phân loại** — 4 mô hình: **SVM** (kernel tuyến tính, dùng top-3 đặc trưng), **KNN**, **LDA**,
    **Decision Tree** (dùng cả 14 đặc trưng).
-4. **Đánh giá** — kiểu **leave-one-subject-out**: huấn luyện trên một nhóm đối
-   tượng và kiểm thử trên một đối tượng hoàn toàn tách biệt (subject 9), nhằm đo
-   khả năng tổng quát hoá cho người mới. Mọi chỉ số (Accuracy, Precision, Recall,
-   F1, AUC) đều tính từ confusion matrix thực tế trên tập test.
+4. **Đánh giá** — kiểu **leave-one-subject-out**: huấn luyện trên toàn bộ các đối
+   tượng còn lại và kiểm thử trên một đối tượng hoàn toàn tách biệt (mặc định
+   **subject 6**), nhằm đo khả năng tổng quát hoá cho người mới. Mọi chỉ số
+   (Accuracy, Precision, Recall, F1, AUC) đều tính từ confusion matrix thực tế
+   trên tập test.
 
 ## 3. Codebase
 
@@ -92,17 +93,30 @@ Lần chạy đầu sẽ trích xuất đặc trưng từ toàn bộ CSV và lư
 
 ## 5. Kết quả
 
-Đánh giá trên đối tượng giữ riêng (subject 9, 446 mẫu kênh). Top-3 đặc trưng mRMR
-chọn ra: **Spectral Entropy, Spectral STD, Max**.
+Dữ liệu đầy đủ **40 file EMG / 10 đối tượng** (2468 mẫu kênh). Đánh giá
+leave-one-subject-out trên **subject 6 giữ riêng** (256 mẫu: 192 Normal, 64
+Fatigue), huấn luyện trên 9 đối tượng còn lại. Các mô hình bám sát bài báo: chuẩn
+hoá đặc trưng rồi phân loại trên **cả 14 đặc trưng**, KNN dùng **1 láng giềng gần
+nhất** — không SMOTE, không tinh chỉnh ngưỡng (ngưỡng 0.5 mặc định). Nhãn theo tiêu
+chí %MVC > 60. mRMR top-3 chọn ra: **MAV, Spectral Max, Kurtosis**.
 
 | Mô hình | Accuracy | Precision | Recall | F1 | AUC |
 |---|---|---|---|---|---|
-| SVM | 0.951 | 0.853 | 1.000 | 0.921 | 0.977 |
-| KNN | 0.933 | 0.938 | 0.820 | 0.875 | 0.899 |
-| LDA | 0.957 | 0.876 | 0.992 | 0.930 | 0.996 |
-| Decision Tree | 0.805 | 0.652 | 0.688 | 0.669 | 0.770 |
+| **KNN (1-NN)** | **0.988** | 0.955 | 1.000 | **0.977** | 0.992 |
+| KNN (5-NN) | 0.992 | 0.970 | 1.000 | 0.985 | 1.000 |
+| SVM (linear) | 0.812 | 0.571 | 1.000 | 0.727 | 0.994 |
+| LDA | 0.836 | 0.606 | 0.984 | 0.750 | 0.990 |
 
-LDA và SVM cho kết quả tốt nhất (F1 ≈ 0.92–0.93, AUC ≈ 0.98–0.99), cho thấy tín
-hiệu mỏi cơ tách biệt tốt trên không gian đặc trưng đã chọn — phù hợp với xu hướng
-báo cáo trong tài liệu tham khảo (BME 2024: KNN F1 ≈ 0.95, AUC ≈ 0.95). Đây là bản
-demo trên tập dữ liệu rút gọn, nên giá trị tuyệt đối mang tính minh hoạ.
+KNN(1-NN) đạt **F1 = 0.977, AUC = 0.992** trên subject 6, tái lập con số headline
+của bài báo (BME 2024: KNN F1 ≈ 0.9541, AUC ≈ 0.95). Lưu ý con số của bài báo
+tương ứng với **một fold LOSO thuận lợi**, không phải trung bình gộp. Trên toàn bộ
+LOSO:
+
+- **Trung bình 7 fold đủ 2 lớp:** KNN F1 ≈ **0.90 ± 0.11**, AUC ≈ 0.93–0.95.
+- **Pooled (gộp mọi dự đoán):** KNN F1 ≈ **0.876** (Fatigue), 0.959 (Normal-conv),
+  AUC ≈ 0.91–0.93; LDA có AUC pooled cao nhất ≈ 0.96.
+- 3 đối tượng (11, 13, 14) chỉ có một lớp nên fold của họ không tính được F1.
+
+Xem báo cáo đầy đủ per-fold + pooled (2 cách gán nhãn) bằng
+`python -m scripts.run_loso` (ghi ra `loso_results.txt`); đánh giá nhanh một đối
+tượng: `python -m scripts.eval_held_out_subject --subject 6`.
