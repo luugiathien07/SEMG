@@ -170,7 +170,7 @@ canvas{display:block;width:100%}
 </head>
 <body>
 
-<div class="title">1. Tín hiệu EMG — Near-Real-Time (trung bình các kênh hợp lệ)</div>
+<div class="title">1. Tín hiệu EMG thời gian thực</div>
 <div class="panel-row">
   <div class="chart-box wave-box">
     <canvas id="wave"></canvas>
