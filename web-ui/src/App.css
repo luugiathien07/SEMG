@@ -1,0 +1,17 @@
+.app-layout {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.app-main {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  margin-left: var(--sidebar-width);
+}
+
+/* Full-screen pages (intro slides) hide the sidebar offset */
+.app-main:has(.intro-slide) {
+  margin-left: 0;
+}

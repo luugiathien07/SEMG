@@ -1,0 +1,169 @@
+.intro-slide {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.intro-slide__bg {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 70% 50% at 15% 80%, rgba(27,122,125,0.08) 0%, transparent 70%),
+    radial-gradient(ellipse 60% 40% at 85% 20%, rgba(232,96,76,0.06) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.intro-slide__content {
+  position: relative;
+  z-index: 1;
+  max-width: 1200px;
+  width: 100%;
+  text-align: center;
+  padding: 4vh 6vw;
+}
+
+/* Badge */
+.intro-slide__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--teal-bg);
+  border: 1px solid var(--teal-border);
+  border-radius: var(--radius-pill);
+  padding: 8px 24px;
+  font-size: var(--font-sm);
+  font-weight: 600;
+  color: var(--teal-light);
+  letter-spacing: 0.5px;
+  margin-bottom: 2.5vh;
+  backdrop-filter: blur(6px);
+}
+.intro-slide__badge-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--teal);
+  box-shadow: 0 0 8px rgba(27,122,125,0.6);
+  animation: pulse 2s infinite;
+}
+
+/* Title */
+.intro-slide__title {
+  font-size: var(--font-3xl);
+  font-weight: 900;
+  line-height: 1.15;
+  letter-spacing: -1px;
+  margin-bottom: 1.2vh;
+  white-space: nowrap;
+}
+.intro-slide__subtitle {
+  font-size: var(--font-lg);
+  color: var(--text-secondary);
+  font-weight: 500;
+  margin-bottom: 4vh;
+}
+
+/* Grid */
+.intro-slide__grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: clamp(12px, 1.5vw, 24px);
+  margin-bottom: 4vh;
+}
+.intro-slide__card {
+  padding: clamp(18px, 2vw, 28px);
+  text-align: left;
+}
+.intro-slide__card-icon {
+  width: 44px; height: 44px;
+  border-radius: var(--radius-md);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.3rem;
+  margin-bottom: 14px;
+}
+.intro-slide__card-icon--0 { background: var(--teal-bg); color: var(--teal-light); }
+.intro-slide__card-icon--1 { background: var(--coral-light); color: var(--coral); }
+.intro-slide__card-icon--2 { background: var(--green-bg); color: var(--green); }
+.intro-slide__card-icon--3 { background: var(--purple-bg); color: var(--purple); }
+
+.intro-slide__card-label {
+  font-size: var(--font-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+.intro-slide__card-text {
+  font-size: var(--font-base);
+  line-height: 1.55;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+.intro-slide__card-text strong { color: var(--text-primary); }
+
+/* Output tags */
+.intro-slide__outputs {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 3vh;
+}
+.intro-slide__output-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--teal-bg);
+  border: 1px solid var(--teal-border);
+  border-radius: 10px;
+  padding: 10px 20px;
+  font-size: var(--font-sm);
+  font-weight: 600;
+  color: var(--teal-light);
+}
+.intro-slide__check { color: var(--green); font-size: 1.1em; }
+
+/* CTA */
+.intro-slide__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 36px;
+  border: none;
+  border-radius: var(--radius-md);
+  background: linear-gradient(135deg, var(--teal) 0%, #22998C 100%);
+  color: white;
+  font-family: var(--font-family);
+  font-size: var(--font-md);
+  font-weight: 700;
+  cursor: pointer;
+  margin-bottom: 2.5vh;
+  box-shadow: 0 4px 20px rgba(27,122,125,0.35);
+  transition: box-shadow var(--transition-base);
+}
+.intro-slide__cta:hover {
+  box-shadow: 0 6px 28px rgba(27,122,125,0.5);
+}
+
+/* Footer */
+.intro-slide__footer {
+  font-size: var(--font-xs);
+  color: var(--text-dim);
+  font-weight: 500;
+  letter-spacing: 0.3px;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .intro-slide__grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 560px) {
+  .intro-slide__grid { grid-template-columns: 1fr; }
+  .intro-slide__outputs { flex-direction: column; }
+}

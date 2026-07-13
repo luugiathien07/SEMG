@@ -1,0 +1,38 @@
+.metric-card {
+  padding: var(--space-lg);
+  text-align: left;
+}
+.metric-card__icon {
+  width: 44px; height: 44px;
+  border-radius: var(--radius-md);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.3rem;
+  margin-bottom: 14px;
+}
+.metric-card__icon--teal { background: var(--teal-bg); }
+.metric-card__icon--coral { background: var(--coral-light); }
+.metric-card__icon--green { background: var(--green-bg); }
+.metric-card__icon--purple { background: var(--purple-bg); }
+.metric-card__icon--amber { background: var(--amber-bg); }
+
+.metric-card__label {
+  font-size: var(--font-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  color: var(--text-muted);
+  margin-bottom: var(--space-sm);
+}
+.metric-card__value {
+  font-size: var(--font-xl);
+  font-weight: 800;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+.metric-card__delta {
+  margin-top: 6px;
+  font-size: var(--font-sm);
+  font-weight: 600;
+}
+.metric-card__delta--up { color: var(--green); }
+.metric-card__delta--down { color: var(--coral); }

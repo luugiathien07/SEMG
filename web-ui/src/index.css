@@ -1,0 +1,126 @@
+/* ══════════════════════════════════════════════════════════════
+   Design System — sEMG Fatigue Analysis Platform (Light Theme)
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── CSS Custom Properties (Design Tokens) ── */
+:root {
+  /* Colors — Light Theme */
+  --bg-primary: #FFFFFF;
+  --bg-secondary: #F7F8FA;
+  --bg-card: rgba(0,0,0,0.02);
+  --bg-card-hover: rgba(0,0,0,0.04);
+  --border-subtle: rgba(0,0,0,0.08);
+  --border-hover: rgba(0,0,0,0.14);
+
+  --text-primary: #1A202C;
+  --text-secondary: #4A5568;
+  --text-muted: #718096;
+  --text-dim: #A0AEC0;
+
+  --teal: #1B7A7D;
+  --teal-light: #1B7A7D;
+  --teal-bg: rgba(27,122,125,0.08);
+  --teal-border: rgba(27,122,125,0.25);
+  --teal-fill: rgba(27,122,125,0.06);
+
+  --coral: #E8604C;
+  --coral-light: rgba(232,96,76,0.08);
+  --coral-fill: rgba(232,96,76,0.06);
+
+  --green: #27AE60;
+  --green-bg: rgba(39,174,96,0.08);
+
+  --purple: #9B59B6;
+  --purple-bg: rgba(155,89,182,0.08);
+
+  --amber: #F2994A;
+  --amber-bg: rgba(242,153,74,0.08);
+
+  --gray-threshold: #888888;
+
+  /* Chart axis/grid colors for light theme */
+  --chart-axis: #718096;
+  --chart-grid: rgba(0,0,0,0.06);
+
+  /* Typography */
+  --font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-xs: clamp(0.7rem, 0.8vw, 0.8rem);
+  --font-sm: clamp(0.8rem, 0.95vw, 0.9rem);
+  --font-base: clamp(0.88rem, 1vw, 1rem);
+  --font-md: clamp(1rem, 1.15vw, 1.1rem);
+  --font-lg: clamp(1.15rem, 1.4vw, 1.35rem);
+  --font-xl: clamp(1.5rem, 2vw, 1.8rem);
+  --font-2xl: clamp(2rem, 3vw, 2.8rem);
+  --font-3xl: clamp(2.4rem, 4.5vw, 4.2rem);
+
+  /* Spacing */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-2xl: 48px;
+
+  /* Radii */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-pill: 40px;
+
+  /* Transitions */
+  --transition-fast: 0.15s ease;
+  --transition-base: 0.3s ease;
+
+  /* Sidebar */
+  --sidebar-width: 280px;
+}
+
+/* ── Reset ── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body, #root {
+  height: 100%;
+  font-family: var(--font-family);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,0.12);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.2); }
+
+/* ── Typography ── */
+h1, h2, h3, h4, h5, h6 { font-weight: 700; line-height: 1.2; }
+a { color: var(--teal); text-decoration: none; }
+
+/* ── Utility ── */
+.text-gradient {
+  background: linear-gradient(135deg, #1A202C 30%, var(--teal) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.glass-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  transition: border-color var(--transition-base), transform var(--transition-base), box-shadow var(--transition-base);
+}
+.glass-card:hover {
+  border-color: var(--border-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+}
