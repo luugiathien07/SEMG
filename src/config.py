@@ -21,6 +21,35 @@ NFFT = 2048                  # 2^nextpow2(2000)
 CSV_SEP = ";"                # European-style separator
 N_CHANNELS = 64              # EMG channels per file (columns 1..64, col 0 = index)
 
+# --- 64-electrode physical layout (docs/sơ đồ channel.png) ------------------
+# 13 rows x 5 cols, 8mm inter-electrode distance, along Biceps Brachii.
+# CHANNEL_LAYOUT[row][col] (0-based) = physical channel number (1-64), or
+# None for the cut corner (row=12, col=4 — no electrode there). Formula
+# derived and verified in docs/09-so-do-kenh-va-mfcv.md section 9.1.1:
+#   c=1: ch = 65-r   c=2: ch = 38+r   c=3: ch = 39-r
+#   c=4: ch = 12+r   c=5: ch = 13-r (r=1..12 only; r=13 has no electrode)
+# where r = row 1..13, c = col 1..5 (both 1-based in the formula).
+def _build_channel_layout() -> list[list[int | None]]:
+    grid: list[list[int | None]] = []
+    for r in range(1, 14):
+        row: list[int | None] = []
+        for c in range(1, 6):
+            if c == 1:
+                row.append(65 - r)
+            elif c == 2:
+                row.append(38 + r)
+            elif c == 3:
+                row.append(39 - r)
+            elif c == 4:
+                row.append(12 + r)
+            else:  # c == 5
+                row.append(13 - r if r <= 12 else None)
+        grid.append(row)
+    return grid
+
+
+CHANNEL_LAYOUT = _build_channel_layout()
+
 # --- Fixed feature order (spec section 4.2) --------------------------------
 FEATURE_NAMES = [
     "RMS", "MAV", "Skewness", "Kurtosis", "Max", "Min", "STD", "Mean",
