@@ -47,7 +47,7 @@ def _chart(fig, height: int = 420, **kwargs):
     )
     fig.update_xaxes(showgrid=True, gridcolor="#F0F0F0", gridwidth=1)
     fig.update_yaxes(showgrid=True, gridcolor="#F0F0F0", gridwidth=1)
-    kwargs.setdefault("use_container_width", True)
+    kwargs.setdefault("width", "stretch")
     st.plotly_chart(fig, **kwargs)
 
 
@@ -269,7 +269,7 @@ def _render_endurance_trend(results: list[end.SessionResultWithProba]) -> None:
             "Điểm sức bền (s)": "{:.1f}",
             "% cửa sổ chưa mỏi": "{:.1f}",
         }),
-        use_container_width=True, hide_index=True,
+        width="stretch", hide_index=True,
     )
 
 
@@ -365,7 +365,7 @@ def _render_recovery_metrics() -> None:
         trend_df[["Buổi", "RMS", "MDF", "Symmetry (%)"]].style.format({
             "RMS": "{:.2f}", "MDF": "{:.1f}", "Symmetry (%)": "{:.1f}",
         }),
-        use_container_width=True, hide_index=True,
+        width="stretch", hide_index=True,
     )
 
 
