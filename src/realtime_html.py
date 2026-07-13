@@ -35,6 +35,7 @@ def build_realtime_html(
     signal: np.ndarray,
     segments_info: list[dict],
     fs: int,
+    channel_layout: list[list[int | None]],
     display_window_sec: float = 3.0,
     playback_duration_sec: float = 30.0,
     envelope_window_sec: float = 0.05,
@@ -48,6 +49,10 @@ def build_realtime_html(
     and rendered with Canvas2D.  The browser pans a *display_window_sec*
     window across the data using ``requestAnimationFrame`` — no server
     round-trips, no Plotly overhead, typically 60 fps.
+
+    Each dict in `segments_info` must include a `"channelPreds"` key: a
+    64-length list (index = physical channel - 1) of 0/1/None, used to color
+    the 64-electrode diagram for that segment.
     """
     env_samples = max(1, int(envelope_window_sec * fs))
     processed = rectify_envelope(signal, env_samples)
@@ -76,6 +81,7 @@ def build_realtime_html(
         "trendMdf": trend_mdf,
         "models": model_metrics or [],
         "bestModel": best_model,
+        "channelLayout": channel_layout,
     }
 
     return _TEMPLATE.replace('"__DATA__"', json.dumps(data))
@@ -97,6 +103,10 @@ _TEMPLATE = r"""<!DOCTYPE html>
 body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;padding:8px 16px 20px}
 .title{font-size:17px;font-weight:600;margin-bottom:4px;color:var(--text)}
 .chart-box{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:6px;margin-bottom:6px}
+.panel-row{display:flex;gap:6px;align-items:flex-start}
+.panel-row .chart-box{margin-bottom:6px}
+.wave-box{flex:2;min-width:0}
+.chmap-box{flex:1;min-width:180px}
 canvas{display:block;width:100%}
 .legend{display:flex;gap:16px;font-size:13px;color:var(--text-soft);margin-top:4px;padding-left:50px}
 .legend span::before{content:'';display:inline-block;width:14px;height:3px;margin-right:5px;vertical-align:middle;border-radius:1px}
@@ -106,6 +116,7 @@ canvas{display:block;width:100%}
 .lg-mdf::before{background:var(--blue)}
 .lg-ok::before{background:var(--green);width:10px;height:10px;border-radius:2px}
 .lg-fat::before{background:var(--red);width:10px;height:10px;border-radius:2px}
+.lg-invalid::before{background:#94A3B8;width:10px;height:10px;border-radius:2px}
 .controls{display:flex;align-items:center;gap:10px;margin-bottom:6px}
 .tog{background:var(--card);color:var(--text-soft);border:1px solid var(--border);border-radius:4px;padding:3px 9px;font-size:13px;cursor:pointer;white-space:nowrap}
 .tog.on{background:var(--gold);color:#fff;border-color:var(--gold)}
@@ -158,12 +169,22 @@ canvas{display:block;width:100%}
 </head>
 <body>
 
-<div class="title">1. Tín hiệu EMG — Near-Real-Time</div>
-<div class="chart-box">
-  <canvas id="wave"></canvas>
-  <div class="legend">
-    <span class="lg-raw">Tín hiệu thô</span>
-    <span class="lg-proc">Rectified envelope</span>
+<div class="title">1. Tín hiệu EMG — Near-Real-Time (trung bình các kênh hợp lệ)</div>
+<div class="panel-row">
+  <div class="chart-box wave-box">
+    <canvas id="wave"></canvas>
+    <div class="legend">
+      <span class="lg-raw">Tín hiệu thô</span>
+      <span class="lg-proc">Rectified envelope</span>
+    </div>
+  </div>
+  <div class="chart-box chmap-box">
+    <canvas id="chmap"></canvas>
+    <div class="legend">
+      <span class="lg-ok">Không mỏi</span>
+      <span class="lg-fat">Mỏi</span>
+      <span class="lg-invalid">Kênh không hợp lệ</span>
+    </div>
   </div>
 </div>
 
@@ -232,7 +253,7 @@ let playing=false, curT=0, lastTs=null, sf=1, showProc=true;
 const baseSpd=D.totalSec/D.playbackDuration;
 const maxT=D.totalSec-D.displayWindow;
 
-let wCtx,tCtx,wW,wH,tW,tH;
+let wCtx,tCtx,cCtx,wW,wH,tW,tH,cW,cH;
 
 function setupCanvas(c,h){
   const dpr=devicePixelRatio||1;
@@ -247,8 +268,9 @@ function setupCanvas(c,h){
 function init(){
   [wCtx,wW,wH]=setupCanvas(document.getElementById('wave'),300);
   [tCtx,tW,tH]=setupCanvas(document.getElementById('trend'),170);
+  [cCtx,cW,cH]=setupCanvas(document.getElementById('chmap'),300);
   document.getElementById('stModel').textContent=D.bestModel?'('+D.bestModel+')':'';
-  drawWave(); drawTrend(); updateSeg(); updateProg(); renderMetrics();
+  drawWave(); drawTrend(); drawChannelMap(); updateSeg(); updateProg(); renderMetrics();
 }
 
 function drawWave(){
@@ -307,6 +329,37 @@ function curSeg(){
   const mid=curT+D.displayWindow/2;
   for(let i=D.segments.length-1;i>=0;i--) if(mid>=D.segments[i].start) return i;
   return 0;
+}
+
+function drawChannelMap(){
+  const ctx=cCtx, w=cW, h=cH;
+  ctx.fillStyle='#FFFFFF'; ctx.fillRect(0,0,w,h);
+
+  const layout=D.channelLayout;
+  const rows=layout.length, cols=layout[0].length;
+  const pad=10, gridW=w-2*pad, gridH=h-2*pad;
+  const cellW=gridW/cols, cellH=gridH/rows;
+  const rad=Math.min(cellW,cellH)*0.28;
+
+  const si=curSeg(), preds=D.segments[si].channelPreds;
+
+  ctx.font='9px sans-serif'; ctx.textAlign='left'; ctx.textBaseline='middle';
+  for(let r=0;r<rows;r++){
+    for(let c=0;c<cols;c++){
+      const ch=layout[r][c];
+      if(ch===null) continue;
+      const cx=pad+cellW*(c+0.5), cy=pad+cellH*(r+0.5);
+      const pred=preds[ch-1];
+      let color;
+      if(pred===1) color='#DC2626';
+      else if(pred===0) color='#16A34A';
+      else color='#94A3B8';
+      ctx.beginPath(); ctx.arc(cx,cy,rad,0,2*Math.PI);
+      ctx.fillStyle=color; ctx.fill();
+      ctx.fillStyle='#1E293B';
+      ctx.fillText(String(ch), cx+rad+2, cy);
+    }
+  }
 }
 
 function updateSeg(){
@@ -466,7 +519,7 @@ function renderMetrics(){
 function seek(e){
   const r=document.getElementById('track').getBoundingClientRect();
   curT=Math.max(0,Math.min(maxT,((e.clientX-r.left)/r.width)*maxT));
-  drawWave(); drawTrend(); updateSeg(); updateProg();
+  drawWave(); drawTrend(); drawChannelMap(); updateSeg(); updateProg();
 }
 
 function frame(ts){
@@ -476,7 +529,7 @@ function frame(ts){
   lastTs=ts;
   curT=Math.min(curT+dt*baseSpd*sf, maxT);
 
-  drawWave(); drawTrend(); updateSeg(); updateProg();
+  drawWave(); drawTrend(); drawChannelMap(); updateSeg(); updateProg();
 
   if(curT>=maxT){
     playing=false;
