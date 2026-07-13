@@ -10,7 +10,7 @@ from src.evaluate import ModelResult
 from src.session_builder import SegmentInfo
 from src.realtime_session import (
     rectify_envelope, PlaybackStep, build_playback_steps, SegmentAssessment,
-    assess_segments, best_model_name,
+    assess_segments, best_model_name, assess_channel_grid,
 )
 
 
@@ -226,3 +226,37 @@ class TestAssessSegments:
         # to make the regression this test guards against concrete.
         wrong_rms_seg0 = float(np.sqrt(np.mean(signal[0:100] ** 2)))
         assert abs(assessments[0].rms - wrong_rms_seg0) > 1e-6
+
+
+class TestAssessChannelGrid:
+    def test_returns_one_entry_per_segment_length_64(self, monkeypatch):
+        segments = _fake_segments()
+        # 3 channels total per file; channel idx 1 is invalid (not in
+        # valid_channels) and must come back as None, not 0/1.
+        channels_by_file = {
+            segments[0].file.path: np.tile(
+                np.array([0.1, 0.2, 0.3]), (100, 1)),
+            segments[1].file.path: np.tile(
+                np.array([0.1, 0.2, 0.3]), (100, 1)),
+        }
+        monkeypatch.setattr(dl, "load_channels", lambda path: channels_by_file[path])
+        result_model = ModelResult(
+            name="KNN", accuracy=0.9, precision=0.9, recall=0.9, f1=0.9,
+            cv_accuracy=0.9, auc=None, confusion=np.zeros((2, 2)),
+            features_used=cfg.FEATURE_NAMES, fitted_estimator=_StubEstimator(),
+            threshold=0.5,
+        )
+        out = assess_channel_grid(segments, valid_channels=[0, 2], model_result=result_model)
+
+        assert len(out) == 2
+        for entry in out:
+            assert len(entry) == 64
+            # idx 1 (channel physical #2) is not in valid_channels -> None
+            assert entry[1] is None
+            # idx 0 and idx 2 are valid -> stub predicts Fatigue (1) always
+            assert entry[0] == 1
+            assert entry[2] == 1
+            # every other index (not a real column in this 3-channel fake
+            # file, and not in valid_channels) must also be None
+            assert entry[3] is None
+            assert entry[63] is None

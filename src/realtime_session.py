@@ -9,6 +9,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
+from . import data_loader as dl
 from . import feature_extraction as fe
 from . import inference as inf
 from .evaluate import ModelResult
@@ -134,4 +135,35 @@ def assess_segments(
             segment=seg, feats=feats, rms=feats["RMS"], mdf=feats["MDF"],
             predictions=predictions,
         ))
+    return out
+
+
+def assess_channel_grid(
+    segments: list[SegmentInfo],
+    valid_channels: list[int],
+    model_result: ModelResult,
+) -> list[list[int | None]]:
+    """Per-segment, per-channel Normal/Fatigue prediction for the 64-channel
+    diagram. Each segment corresponds to exactly one file (session_builder
+    invariant), so the file's own channel matrix is loaded directly instead
+    of slicing the concatenated averaged signal. Only `model_result` (the
+    demo's pinned/best model) is run — not the full model list — since the
+    diagram only needs one verdict per channel, not a full per-model table.
+
+    Returns one 64-length list per segment, indexed by `physical_channel - 1`
+    (0-based): 0/1 for channels in `valid_channels`, None otherwise (dead or
+    invalid for this subject).
+    """
+    valid_set = set(valid_channels)
+    out: list[list[int | None]] = []
+    for seg in segments:
+        channels = dl.load_channels(seg.file.path)
+        grid: list[int | None] = [None] * 64
+        for ch in valid_channels:
+            if ch not in valid_set or ch >= channels.shape[1]:
+                continue
+            x = channels[:, ch]
+            preds = inf.predict_channel(x, [model_result])
+            grid[ch] = preds[0]["pred"] if preds else None
+        out.append(grid)
     return out
