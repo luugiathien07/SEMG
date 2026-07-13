@@ -7,7 +7,7 @@ import pytest
 from src import data_loader as dl
 from src.session_builder import (
     parse_mvc, is_post_fatigue, list_ordered_segments, common_valid_channels,
-    build_session_signal,
+    build_session_signal, build_session_signal_avg,
 )
 
 
@@ -103,3 +103,37 @@ class TestBuildSessionSignal:
         monkeypatch.setattr(dl, "list_files", lambda: files)
         with pytest.raises(ValueError):
             build_session_signal(9, channel=0)
+
+
+class TestBuildSessionSignalAvg:
+    def test_averages_only_valid_channels_and_concatenates_in_mvc_order(self, monkeypatch):
+        files = [_fake_file(9, "20", 0), _fake_file(9, "10", 0)]
+        monkeypatch.setattr(dl, "list_files", lambda: files)
+        # 3 channels each; channel 1 (idx 1) is dead (all zero) in file "10"
+        # -> common_valid_channels should exclude idx 1 from the average.
+        channels_by_file = {
+            files[0].path: np.array([  # "20", 2 samples, 3 channels
+                [10.0, 20.0, 30.0],
+                [10.0, 20.0, 30.0],
+            ]),
+            files[1].path: np.array([  # "10", 2 samples, 3 channels
+                [1.0, 0.0, 3.0],
+                [1.0, 0.0, 3.0],
+            ]),
+        }
+        monkeypatch.setattr(dl, "load_channels", lambda path: channels_by_file[path])
+
+        signal, segments = build_session_signal_avg(9)
+
+        # valid channels = idx 0 and idx 2 (idx 1 is all-zero in file "10")
+        # "10": mean(1.0, 3.0) = 2.0 per sample; "20": mean(10.0, 30.0) = 20.0
+        np.testing.assert_allclose(signal, [2.0, 2.0, 20.0, 20.0])
+        assert [s.file.condition for s in segments] == ["10", "20"]
+        assert segments[0].start_sample == 0 and segments[0].end_sample == 2
+        assert segments[1].start_sample == 2 and segments[1].end_sample == 4
+
+    def test_raises_if_fewer_than_two_files(self, monkeypatch):
+        files = [_fake_file(9, "10", 0)]
+        monkeypatch.setattr(dl, "list_files", lambda: files)
+        with pytest.raises(ValueError):
+            build_session_signal_avg(9)

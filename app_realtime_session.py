@@ -53,8 +53,8 @@ def get_results():
 
 
 @st.cache_data(show_spinner="Đang ghép dữ liệu buổi tập…")
-def get_session(subject: int, channel: int):
-    return sb.build_session_signal(subject, channel)
+def get_session(subject: int):
+    return sb.build_session_signal_avg(subject)
 
 
 @st.cache_data(show_spinner="Đang tải danh sách kênh hợp lệ…")
@@ -68,8 +68,8 @@ def _segment_label(seg) -> str:
 
 
 def _render_realtime_tab() -> None:
-    col_sel1, col_sel2, col_btn1, col_btn2 = st.columns(
-        [2, 2, 1.4, 1], vertical_alignment="bottom",
+    col_sel1, col_btn1, col_btn2 = st.columns(
+        [2, 1.4, 1], vertical_alignment="bottom",
     )
     with col_sel1:
         muscle = st.selectbox(
@@ -84,9 +84,6 @@ def _render_realtime_tab() -> None:
         )
         return
 
-    valid_channels = get_valid_channels(SUBJECT)
-    with col_sel2:
-        channel = st.selectbox("Kênh EMG", valid_channels, format_func=lambda i: f"Kênh {i}")
     with col_btn1:
         start = st.button("Bắt đầu mô phỏng buổi tập", type="primary")
     with col_btn2:
@@ -99,7 +96,7 @@ def _render_realtime_tab() -> None:
         st.session_state.pop("_rt_html", None)
         st.rerun()
 
-    signal, segments = get_session(SUBJECT, channel)
+    signal, segments = get_session(SUBJECT)
 
     if start:
         st.session_state["session_started"] = True
@@ -109,8 +106,16 @@ def _render_realtime_tab() -> None:
         if "_rt_html" not in st.session_state:
             results = get_results()
             assessments = rts.assess_segments(signal, segments, results)
+            best_model = (
+                DEMO_MODEL if any(r.name == DEMO_MODEL for r in results)
+                else rts.best_model_name(results)
+            )
+            model_result = next(r for r in results if r.name == best_model)
+            valid_channels = get_valid_channels(SUBJECT)
+            channel_preds = rts.assess_channel_grid(segments, valid_channels, model_result)
+
             segments_info = []
-            for seg, assess in zip(segments, assessments):
+            for seg, assess, ch_preds in zip(segments, assessments, channel_preds):
                 segments_info.append({
                     "start": round(seg.start_sample / config.FS, 3),
                     "end": round(seg.end_sample / config.FS, 3),
@@ -119,6 +124,7 @@ def _render_realtime_tab() -> None:
                     "rms": round(float(assess.rms), 4),
                     "mdf": round(float(assess.mdf), 2),
                     "predictions": assess.predictions,
+                    "channelPreds": ch_preds,
                 })
             model_metrics = [
                 {
@@ -133,14 +139,11 @@ def _render_realtime_tab() -> None:
                 }
                 for r in results
             ]
-            best_model = (
-                DEMO_MODEL if any(r.name == DEMO_MODEL for r in results)
-                else rts.best_model_name(results)
-            )
 
             total_sec = len(signal) / config.FS
             st.session_state["_rt_html"] = rth.build_realtime_html(
                 signal, segments_info, config.FS,
+                channel_layout=config.CHANNEL_LAYOUT,
                 display_window_sec=DISPLAY_WINDOW_SEC,
                 playback_duration_sec=total_sec,
                 model_metrics=model_metrics,
@@ -153,7 +156,7 @@ def _render_realtime_tab() -> None:
 st.title("Giám sát Mỏi cơ")
 
 tab_realtime, tab_rehab = st.tabs(
-    ["Giám sát Mỏi cơ (Real-time)", "Rehab Recovery Tracking (Usecase 2)"]
+    ["Giám sát Mỏi cơ (Real-time)", "Giám sát phục hồi cơ"]
 )
 
 with tab_realtime:

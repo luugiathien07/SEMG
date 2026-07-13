@@ -90,3 +90,34 @@ def build_session_signal(
 
     signal = np.concatenate(chunks)
     return signal, segments
+
+
+def build_session_signal_avg(subject: int) -> tuple[np.ndarray, list[SegmentInfo]]:
+    """Like `build_session_signal`, but each file's contribution is the
+    per-sample mean across that subject's valid channels (`common_valid_channels`)
+    instead of one selected channel — dead channels are excluded from the
+    average so they don't pull it toward zero.
+    """
+    files = list_ordered_segments(subject)
+    if len(files) < 2:
+        raise ValueError(
+            f"Subject {subject} không đủ file để ghép buổi tập "
+            f"(cần ít nhất 2, có {len(files)})."
+        )
+    valid_channels = common_valid_channels(subject)
+
+    chunks: list[np.ndarray] = []
+    segments: list[SegmentInfo] = []
+    offset = 0
+    for f in files:
+        channels = dl.load_channels(f.path)
+        x = channels[:, valid_channels].mean(axis=1)
+        chunks.append(x)
+        segments.append(SegmentInfo(
+            file=f, mvc=parse_mvc(f.condition),
+            start_sample=offset, end_sample=offset + len(x),
+        ))
+        offset += len(x)
+
+    signal = np.concatenate(chunks)
+    return signal, segments
