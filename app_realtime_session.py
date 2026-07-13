@@ -156,7 +156,7 @@ def _render_realtime_tab() -> None:
 st.title("Giám sát Mỏi cơ")
 
 tab_realtime, tab_rehab = st.tabs(
-    ["Giám sát Mỏi cơ (Real-time)", "Rehab Recovery Tracking (Usecase 2)"]
+    ["Giám sát Mỏi cơ (Real-time)", "Giám sát phục hồi cơ"]
 )
 
 with tab_realtime:

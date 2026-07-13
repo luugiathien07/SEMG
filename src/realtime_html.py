@@ -107,6 +107,7 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 .panel-row .chart-box{margin-bottom:6px}
 .wave-box{flex:2;min-width:0}
 .chmap-box{flex:1;min-width:180px}
+.chmap-title{font-size:13px;font-weight:600;color:var(--text-soft);text-align:center;margin-bottom:4px}
 canvas{display:block;width:100%}
 .legend{display:flex;gap:16px;font-size:13px;color:var(--text-soft);margin-top:4px;padding-left:50px}
 .legend span::before{content:'';display:inline-block;width:14px;height:3px;margin-right:5px;vertical-align:middle;border-radius:1px}
@@ -179,6 +180,7 @@ canvas{display:block;width:100%}
     </div>
   </div>
   <div class="chart-box chmap-box">
+    <div class="chmap-title">Sơ đồ 64 điện cực — Cơ nhị đầu tay (Biceps brachii)</div>
     <canvas id="chmap"></canvas>
     <div class="legend">
       <span class="lg-ok">Không mỏi</span>
