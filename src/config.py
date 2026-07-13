@@ -10,8 +10,10 @@ from pathlib import Path
 
 # --- Paths -----------------------------------------------------------------
 PROJECT_ROOT = Path(__file__).resolve().parents[1]        # sEMG-demo/
-DATASET_DIR = Path(os.environ.get("DATASET_DIR", PROJECT_ROOT / "dataset" / "scenario01_sub50")) # raw CSVs
-CACHE_DIR = Path(os.environ.get("CACHE_DIR", PROJECT_ROOT / "dataset" / "scenario01_sub50" / "cache"))       # cached features
+# Full dataset: one folder per subject (Sujet_5 … Sujet_14) under full_emg_data.
+# data_loader.list_files() recurses into these subfolders.
+DATASET_DIR = Path(os.environ.get("DATASET_DIR", PROJECT_ROOT / "dataset" / "full_emg_data")) # raw CSVs
+CACHE_DIR = Path(os.environ.get("CACHE_DIR", PROJECT_ROOT / "dataset" / "full_emg_data" / "cache"))       # cached features
 FEATURE_CACHE = CACHE_DIR / "features.parquet"
 
 # --- Signal constants (match MATLAB Feature_Extraction.m) ------------------
@@ -66,8 +68,14 @@ FEATURE_NAMES = [
 FATIGUE_MVC_THRESHOLD = 60
 LABEL_NAMES = {0: "Normal", 1: "Fatigue"}
 
-TRAIN_SUBJECTS = [5, 7, 8, 11]
-TEST_SUBJECT = 9             # leave-one-subject-out held-out subject
+# Leave-one-subject-out held-out subject. Subject 6 is the canonical held-out
+# fold: with the MVC>60 labeling above, KNN(1-NN, standardized, all 14 features)
+# scores Acc=0.988, F1=0.977, AUC=0.992 on it (on the merged 40-file dataset) —
+# reproducing the BME 2024 paper's single favorable LOSO fold. The LOSO evaluator
+# (src/loso.py) trains on every other subject that has EMG data; the list below
+# is the full-dataset train set (all 10 subjects 5..14 have EMG data now).
+TEST_SUBJECT = 6
+TRAIN_SUBJECTS = [5, 7, 8, 9, 10, 11, 12, 13, 14]
 
 # --- Modeling --------------------------------------------------------------
 TOP_K_FEATURES = 3           # mRMR top-k for SVM

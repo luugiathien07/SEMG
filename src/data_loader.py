@@ -57,7 +57,8 @@ def list_files(dataset_dir: Path | None = None) -> list[FileInfo]:
     """All parseable CSVs in the dataset dir, sorted by (subject, condition)."""
     dataset_dir = dataset_dir or config.DATASET_DIR
     infos = []
-    for p in sorted(dataset_dir.glob("*.csv")):
+    # rglob so both a flat dataset dir and one-folder-per-subject layouts work.
+    for p in sorted(dataset_dir.rglob("*.csv")):
         info = parse_filename(p)
         if info is not None:
             infos.append(info)
