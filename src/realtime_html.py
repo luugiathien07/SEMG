@@ -101,7 +101,8 @@ _TEMPLATE = r"""<!DOCTYPE html>
 }
 *{margin:0;padding:0;box-sizing:border-box}
 body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;padding:8px 16px 20px}
-.title{font-size:17px;font-weight:600;margin-bottom:4px;color:var(--text)}
+.title{font-size:23px;font-weight:700;margin:22px 0 10px;color:var(--text)}
+.title:first-of-type{margin-top:6px}
 .chart-box{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:6px;margin-bottom:6px}
 .panel-row{display:flex;gap:6px;align-items:flex-start}
 .panel-row .chart-box{margin-bottom:6px}
@@ -157,6 +158,10 @@ canvas{display:block;width:100%}
 .mtbl th{text-align:left;padding:7px 10px;border-bottom:1px solid var(--border);color:var(--text-soft);font-weight:500;white-space:nowrap}
 .mtbl td{padding:7px 10px;border-bottom:1px solid var(--border);white-space:nowrap}
 .mtbl td.mname{font-weight:600;color:var(--text)}
+.mtbl tr.best td{background:var(--green-tint);border-bottom-color:var(--green)}
+.mtbl tr.best td.mname{color:var(--green);font-weight:700}
+.mtbl tr.best td:first-child{border-left:3px solid var(--green)}
+.mtbl .best-badge{display:inline-block;margin-left:8px;font-size:11px;font-weight:700;color:#fff;background:var(--green);border-radius:10px;padding:1px 8px;vertical-align:middle}
 .cm-wrap{display:flex;gap:16px;flex-wrap:wrap;margin-top:4px}
 .cm-block{flex:1;min-width:180px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px}
 .cm-title{font-size:15px;font-weight:600;color:var(--text);margin-bottom:8px;text-align:center}
@@ -499,10 +504,16 @@ function pct(v){ return v==null?'—':(v*100).toFixed(1)+'%'; }
 
 function renderMetrics(){
   const tb=document.querySelector('#mtbl tbody');
-  tb.innerHTML=D.models.map(m=>
-    '<tr><td class="mname">'+m.name+'</td><td>'+pct(m.accuracy)+'</td><td>'+pct(m.precision)+
-    '</td><td>'+pct(m.recall)+'</td><td>'+pct(m.f1)+'</td><td>'+pct(m.cvAccuracy)+'</td><td>'+pct(m.auc)+'</td></tr>'
-  ).join('');
+  // Best classification result = the demo's chosen model, else the highest F1.
+  let bestName=D.bestModel;
+  if(!bestName || !D.models.some(m=>m.name===bestName))
+    bestName=D.models.reduce((a,b)=>b.f1>a.f1?b:a, D.models[0]).name;
+  tb.innerHTML=D.models.map(m=>{
+    const isBest=m.name===bestName;
+    const nameCell=m.name+(isBest?'<span class="best-badge">★ Tốt nhất</span>':'');
+    return '<tr'+(isBest?' class="best"':'')+'><td class="mname">'+nameCell+'</td><td>'+pct(m.accuracy)+'</td><td>'+pct(m.precision)+
+    '</td><td>'+pct(m.recall)+'</td><td>'+pct(m.f1)+'</td><td>'+pct(m.cvAccuracy)+'</td><td>'+pct(m.auc)+'</td></tr>';
+  }).join('');
 
   const wrap=document.getElementById('cmWrap');
   wrap.innerHTML=D.models.map(m=>{
