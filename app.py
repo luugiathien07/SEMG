@@ -379,6 +379,13 @@ with tab_signal:
 with tab_features:
     st.subheader("Feature distributions: Normal vs Fatigue")
     st.caption("Boxplots show which features separate the two classes.")
+
+    st.markdown("### MNF và MDF")
+    st.caption("MDF là tần số chia đôi tổng công suất phổ; MNF là trọng tâm phổ công suất. "
+               "Khi cơ mỏi, cả hai thường giảm vì năng lượng phổ dịch về vùng tần số thấp.")
+    chart(viz.build_mnf_mdf_comparison_figure(df))
+
+    st.markdown("### 14 đặc trưng")
     select_all = st.checkbox("Select all features", value=False)
     # Changing the key when the checkbox toggles forces the multiselect to
     # re-seed its default; the user can still fine-tune the selection after.

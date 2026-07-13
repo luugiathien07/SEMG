@@ -1,8 +1,14 @@
 """Tests for src/visualization.py chart builders."""
 import numpy as np
+import pandas as pd
 import plotly.graph_objects as go
+import pytest
 
-from src.visualization import build_time_domain_figure, build_psd_figure
+from src.visualization import (
+    build_time_domain_figure,
+    build_psd_figure,
+    build_mnf_mdf_comparison_figure,
+)
 
 
 def _fake_signal(n: int = 2000) -> tuple[np.ndarray, np.ndarray]:
@@ -87,3 +93,35 @@ class TestBuildPsdFigure:
         vline_xs = {round(s.x0, 1) for s in vlines}
         assert feats["MDF"] in vline_xs
         assert feats["MNF"] in vline_xs
+
+
+class TestBuildMnfMdfComparisonFigure:
+    def _fake_feature_table(self) -> pd.DataFrame:
+        return pd.DataFrame({
+            "Class": ["Normal", "Normal", "Fatigue", "Fatigue"],
+            "MDF": [82.0, 78.0, 61.0, 58.0],
+            "MNF": [91.0, 88.0, 69.0, 65.0],
+        })
+
+    def test_returns_go_figure(self):
+        fig = build_mnf_mdf_comparison_figure(self._fake_feature_table())
+        assert isinstance(fig, go.Figure)
+
+    def test_contains_box_and_median_traces_for_each_class(self):
+        fig = build_mnf_mdf_comparison_figure(self._fake_feature_table())
+        names = [trace.name for trace in fig.data]
+        assert "Normal" in names
+        assert "Fatigue" in names
+        assert "Median Normal" in names
+        assert "Median Fatigue" in names
+
+    def test_uses_grouped_boxes(self):
+        fig = build_mnf_mdf_comparison_figure(self._fake_feature_table())
+        assert fig.layout.boxmode == "group"
+
+    def test_missing_required_columns_raises_clear_error(self):
+        with pytest.raises(ValueError, match="MNF"):
+            build_mnf_mdf_comparison_figure(pd.DataFrame({
+                "Class": ["Normal"],
+                "MDF": [82.0],
+            }))
