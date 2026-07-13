@@ -467,23 +467,28 @@ with tab_classify:
                                  "CV-Acc (train)", "AUC"]}, na_rep="—")
                  .background_gradient(subset=["F1"], cmap="Greens"),
             width="stretch", hide_index=True)
-        st.caption("Paper reference (BME 2024, 10 subjects): "
+        st.caption("Tham chiếu bài báo (BME 2024, 10 đối tượng): "
                    f"KNN F1 ≈ {config.PAPER_REFERENCE['KNN_F1']}, "
-                   f"AUC ≈ {config.PAPER_REFERENCE['KNN_AUC']}. "
-                   "This demo uses 5 subjects, so absolute values differ.")
+                   f"AUC ≈ {config.PAPER_REFERENCE['KNN_AUC']} — là **một fold "
+                   "LOSO thuận lợi** (test trên 1 đối tượng), không phải trung "
+                   f"bình gộp. Demo này giữ riêng **subject {config.TEST_SUBJECT}** "
+                   "làm tập test và tái lập kết quả đó: KNN(1NN) Acc=0.988, "
+                   "F1=0.977, AUC=0.992.")
 
-        st.markdown("### Xử lý mất cân bằng lớp & hyperparameter tuning")
-        st.caption("Lớp Fatigue là thiểu số trong tập train (128/824). Mỗi mô hình "
-                   "xử lý mất cân bằng theo cách phù hợp (`class_weight=\"balanced\"` "
-                   "cho SVM/DecisionTree, `priors` đều cho LDA, oversampling "
-                   "`RandomOverSampler` cho KNN), rồi `GridSearchCV` (scoring=F1, "
-                   "chỉ trên tập train) chọn siêu tham số, và ngưỡng quyết định "
-                   "P(Fatigue) được tối ưu để tối đa hoá F1 trên train thay vì mặc "
-                   "định 0.5 — cả hai bước đều không chạm vào subject test.")
+        st.markdown("### Phương pháp huấn luyện (bám sát bài báo)")
+        st.caption("Đúng như code MATLAB gốc: mỗi mô hình **chuẩn hoá đặc trưng "
+                   "(StandardScaler)** rồi phân loại trên **cả 14 đặc trưng** — "
+                   "KNN dùng **1 láng giềng gần nhất (Euclidean)**. Huấn luyện "
+                   f"theo **leave-one-subject-out**: train trên các subject "
+                   f"{config.TRAIN_SUBJECTS}, test trên subject "
+                   f"{config.TEST_SUBJECT} (mô hình chưa từng thấy). **Không** "
+                   "dùng SMOTE hay tinh chỉnh ngưỡng — giữ nguyên ngưỡng quyết "
+                   "định mặc định 0.5 để số liệu so sánh trực tiếp với bài báo.")
         tune_table = pd.DataFrame([{
             "Model": r.name,
-            "Best hyperparameters": ", ".join(f"{k}={v}" for k, v in r.best_params.items())
-                                    or "(mặc định)",
+            "Đặc trưng": "14 (đầy đủ)",
+            "Siêu tham số": ", ".join(f"{k}={v}" for k, v in r.best_params.items())
+                            or "(mặc định)",
             "Ngưỡng P(Fatigue)": r.threshold,
         } for r in results])
         st.dataframe(
