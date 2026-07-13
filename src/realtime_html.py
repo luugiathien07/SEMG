@@ -175,7 +175,7 @@ canvas{display:block;width:100%}
     <canvas id="wave"></canvas>
     <div class="legend">
       <span class="lg-raw">Tín hiệu thô</span>
-      <span class="lg-proc">Rectified envelope</span>
+      <span class="lg-proc">Tín hiệu đã xử lý</span>
     </div>
   </div>
   <div class="chart-box chmap-box">
