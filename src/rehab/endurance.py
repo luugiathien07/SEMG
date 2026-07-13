@@ -34,6 +34,17 @@ class SessionResult:
     pct_nonfatigue: float
 
 
+@dataclass
+class SessionResultWithProba:
+    """SessionResult enriched with per-window fatigue probability and time."""
+    session: int
+    t_half: float
+    endurance_sec: float
+    pct_nonfatigue: float
+    proba: np.ndarray        # P(fatigue) per window, shape (n_windows,)
+    t_centers: np.ndarray    # time center of each window (seconds)
+
+
 def session_t_half(n_sessions: int = 8, random_state: int = RANDOM_STATE) -> np.ndarray:
     """Per-session fatigue-onset time (s): early sessions fatigue fast, later
     sessions fatigue slower, illustrating recovery across sessions."""
@@ -101,5 +112,50 @@ def run(n_sessions: int = 8, random_state: int = RANDOM_STATE) -> tuple[list[Ses
         results.append(SessionResult(
             session=ss["session"], t_half=ss["t_half"],
             endurance_sec=endurance_sec, pct_nonfatigue=pct_nonfatigue,
+        ))
+    return results, float(f1)
+
+
+def run_with_proba(
+    n_sessions: int = 8, random_state: int = RANDOM_STATE,
+) -> tuple[list[SessionResultWithProba], float]:
+    """Like :func:`run`, but each result also carries the per-window fatigue
+    probability ``proba`` and matching ``t_centers`` — needed for the
+    in-session P(fatigue) chart."""
+    rng = np.random.default_rng(random_state)
+    t_halves = session_t_half(n_sessions, random_state)
+
+    raw_sessions: list[dict] = []
+    X_all, y_all = [], []
+    for s, th in enumerate(t_halves, start=1):
+        sig, f = simulate_sustained(float(th), rng)
+        X, y, t_centers = windowize(sig, f, WIN_SEC, OVERLAP)
+        raw_sessions.append({
+            "session": s, "t_half": float(th),
+            "X": X, "t_centers": t_centers,
+        })
+        X_all.append(X)
+        y_all.append(y)
+    X_all = np.vstack(X_all)
+    y_all = np.concatenate(y_all)
+
+    X_tr, X_te, y_tr, y_te = train_test_split(
+        X_all, y_all, test_size=0.3, random_state=0, stratify=y_all,
+    )
+    scaler = StandardScaler().fit(X_tr)
+    knn = KNeighborsClassifier(n_neighbors=7).fit(scaler.transform(X_tr), y_tr)
+    f1 = f1_score(y_te, knn.predict(scaler.transform(X_te)))
+
+    results: list[SessionResultWithProba] = []
+    for ss in raw_sessions:
+        proba = knn.predict_proba(scaler.transform(ss["X"]))[:, 1]
+        fatigued = proba >= 0.5
+        onset_idx = int(np.argmax(fatigued)) if np.any(fatigued) else len(proba) - 1
+        endurance_sec = float(ss["t_centers"][onset_idx])
+        pct_nonfatigue = float(np.mean(proba < 0.5) * 100)
+        results.append(SessionResultWithProba(
+            session=ss["session"], t_half=ss["t_half"],
+            endurance_sec=endurance_sec, pct_nonfatigue=pct_nonfatigue,
+            proba=proba, t_centers=ss["t_centers"],
         ))
     return results, float(f1)

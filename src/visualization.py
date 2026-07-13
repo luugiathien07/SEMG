@@ -6,7 +6,11 @@ Computation stays in feature_extraction.py — these are presentation only.
 from __future__ import annotations
 
 import numpy as np
+import pandas as pd
 import plotly.graph_objects as go
+
+
+CLASS_COLORS = {"Normal": "#2E86DE", "Fatigue": "#E74C3C"}
 
 
 def build_time_domain_figure(
@@ -120,4 +124,77 @@ def build_psd_figure(
         legend=dict(orientation="h", yanchor="bottom", y=1.02,
                     xanchor="right", x=1),
     )
+    return fig
+
+
+def build_mnf_mdf_comparison_figure(
+    df: pd.DataFrame,
+    class_col: str = "Class",
+) -> go.Figure:
+    """Compare MDF and MNF distributions between Normal and Fatigue samples."""
+    required = {"MDF", "MNF", class_col}
+    missing = required.difference(df.columns)
+    if missing:
+        missing_txt = ", ".join(sorted(missing))
+        raise ValueError(f"Missing required columns: {missing_txt}")
+
+    metric_order = ["MDF", "MNF"]
+    class_order = [c for c in ["Normal", "Fatigue"] if c in set(df[class_col])]
+    other_classes = sorted(set(df[class_col]).difference(class_order))
+    class_order.extend(other_classes)
+
+    fig = go.Figure()
+
+    for cls in class_order:
+        cls_df = df[df[class_col] == cls]
+        color = CLASS_COLORS.get(cls, "#8E8E93")
+        fig.add_trace(go.Box(
+            x=np.repeat(metric_order, len(cls_df)),
+            y=np.concatenate([cls_df["MDF"].to_numpy(), cls_df["MNF"].to_numpy()]),
+            name=cls,
+            legendgroup=cls,
+            offsetgroup=cls,
+            marker_color=color,
+            line=dict(color=color),
+            boxmean=True,
+            boxpoints=False,
+            hovertemplate=(
+                "Chỉ số: %{x}<br>"
+                f"Lớp: {cls}<br>"
+                "Tần số: %{y:.2f} Hz<extra></extra>"
+            ),
+        ))
+
+    for cls in class_order:
+        cls_df = df[df[class_col] == cls]
+        color = CLASS_COLORS.get(cls, "#8E8E93")
+        medians = [float(cls_df[metric].median()) for metric in metric_order]
+        fig.add_trace(go.Scatter(
+            x=metric_order,
+            y=medians,
+            mode="lines+markers+text",
+            name=f"Median {cls}",
+            legendgroup=cls,
+            line=dict(color=color, width=2, dash="dot"),
+            marker=dict(size=9, color=color, symbol="diamond"),
+            text=[f"{v:.1f} Hz" for v in medians],
+            textposition="top center",
+            hovertemplate=(
+                "Chỉ số: %{x}<br>"
+                f"Trung vị {cls}: "
+                "%{y:.2f} Hz<extra></extra>"
+            ),
+        ))
+
+    fig.update_layout(
+        title="So sánh MNF và MDF giữa Normal và Fatigue",
+        yaxis_title="Frequency (Hz)",
+        xaxis_title="",
+        boxmode="group",
+        height=460,
+        margin=dict(l=70, r=30, t=70, b=55),
+        legend=dict(orientation="h", yanchor="bottom", y=1.02,
+                    xanchor="right", x=1),
+    )
+    fig.update_yaxes(zeroline=False, gridcolor="rgba(150,150,150,0.22)")
     return fig

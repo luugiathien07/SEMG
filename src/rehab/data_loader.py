@@ -73,3 +73,41 @@ def session_rms_mdf(df: pd.DataFrame) -> tuple[float, float]:
         csum = np.cumsum(p)
         mdf_vals.append(float(f[np.searchsorted(csum, csum[-1] / 2)]))
     return float(np.mean(rms_vals)), float(np.mean(mdf_vals))
+
+
+def compute_recovery_trend(patient: str) -> pd.DataFrame:
+    """Build a per-session recovery trend for *patient*'s impaired arm.
+
+    Returns a DataFrame with columns:
+        Buổi, RMS, MDF, Symmetry (%), baseline_rms, baseline_mdf
+    Symmetry = RMS_impaired / RMS_healthy × 100 (capped at 100).
+    """
+    # healthy baseline (average across healthy sessions)
+    healthy_sessions = list_sessions(patient, "healthy_arm")
+    if healthy_sessions:
+        h_rms, h_mdf = [], []
+        for s in healthy_sessions:
+            df = load_session(s.path)
+            r, m = session_rms_mdf(df)
+            h_rms.append(r)
+            h_mdf.append(m)
+        baseline_rms = float(np.mean(h_rms))
+        baseline_mdf = float(np.mean(h_mdf))
+    else:
+        baseline_rms, baseline_mdf = None, None
+
+    impaired_sessions = list_sessions(patient, "impaired_arm")
+    rows = []
+    for s in impaired_sessions:
+        df = load_session(s.path)
+        rms, mdf = session_rms_mdf(df)
+        symmetry = min(rms / baseline_rms * 100, 100.0) if baseline_rms else None
+        rows.append({
+            "Buổi": s.session_no,
+            "RMS": round(rms, 2),
+            "MDF": round(mdf, 1),
+            "Symmetry (%)": round(symmetry, 1) if symmetry is not None else None,
+            "baseline_rms": baseline_rms,
+            "baseline_mdf": baseline_mdf,
+        })
+    return pd.DataFrame(rows)
