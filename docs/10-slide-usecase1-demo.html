@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Usecase 1 — Giám sát Mỏi cơ Real-time</title>
+<style>
+  :root{
+    --bg: #0d1520;
+    --panel: #131f2e;
+    --panel-line: #22334a;
+    --grid: rgba(232,237,244,0.05);
+    --ink: #e8edf4;
+    --ink-soft: #93a5bc;
+    --ink-faint: #5b6c82;
+    --amber: #e8a33d;
+    --amber-soft: rgba(232,163,61,0.14);
+    --cyan: #5cd3ce;
+    --cyan-soft: rgba(92,211,206,0.14);
+    --green: #6fcf97;
+    --green-soft: rgba(111,207,151,0.14);
+    --rose: #ec6a80;
+    --rose-soft: rgba(236,106,128,0.14);
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    --mono: ui-monospace, "SF Mono", "JetBrains Mono", "Cascadia Code", Menlo, Consolas, monospace;
+  }
+  /* Dark = the clinical biosignal monitor read this deck was designed around.
+     Light = paper printout of the same monitor: same 4 accent hues, tuned
+     for contrast on a bright ground instead of naive inversion. */
+  @media (prefers-color-scheme: light){
+    :root{
+      --bg: #f4f6f9; --panel: #ffffff; --panel-line: #dde4ec;
+      --grid: rgba(15,23,42,0.05);
+      --ink: #101826; --ink-soft: #46536a; --ink-faint: #8592a3;
+      --amber: #a8660b; --amber-soft: rgba(168,102,11,0.10);
+      --cyan: #0d8f88; --cyan-soft: rgba(13,143,136,0.10);
+      --green: #1f9457; --green-soft: rgba(31,148,87,0.10);
+      --rose: #c93a58; --rose-soft: rgba(201,58,88,0.10);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg: #0d1520; --panel: #131f2e; --panel-line: #22334a;
+    --grid: rgba(232,237,244,0.05);
+    --ink: #e8edf4; --ink-soft: #93a5bc; --ink-faint: #5b6c82;
+    --amber: #e8a33d; --amber-soft: rgba(232,163,61,0.14);
+    --cyan: #5cd3ce; --cyan-soft: rgba(92,211,206,0.14);
+    --green: #6fcf97; --green-soft: rgba(111,207,151,0.14);
+    --rose: #ec6a80; --rose-soft: rgba(236,106,128,0.14);
+  }
+  :root[data-theme="light"]{
+    --bg: #f4f6f9; --panel: #ffffff; --panel-line: #dde4ec;
+    --grid: rgba(15,23,42,0.05);
+    --ink: #101826; --ink-soft: #46536a; --ink-faint: #8592a3;
+    --amber: #a8660b; --amber-soft: rgba(168,102,11,0.10);
+    --cyan: #0d8f88; --cyan-soft: rgba(13,143,136,0.10);
+    --green: #1f9457; --green-soft: rgba(31,148,87,0.10);
+    --rose: #c93a58; --rose-soft: rgba(201,58,88,0.10);
+  }
+
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;height:100%;background:var(--bg);color:var(--ink);
+    font-family:var(--sans);overflow:hidden;transition:background .2s,color .2s}
+
+  .deck{height:100vh;width:100vw;scroll-snap-type:y mandatory;overflow-y:scroll;
+    scroll-behavior:smooth}
+  .slide{height:100vh;width:100vw;scroll-snap-align:start;position:relative;
+    display:flex;flex-direction:column;justify-content:center;
+    padding:clamp(28px,5vw,72px) clamp(32px,7vw,96px);overflow:hidden}
+
+  /* faint oscilloscope graticule, shared across slides */
+  .slide::before{
+    content:"";position:absolute;inset:0;pointer-events:none;
+    background-image:
+      linear-gradient(var(--grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size:44px 44px;
+    mask-image:radial-gradient(ellipse at 50% 30%, black 45%, transparent 85%);
+  }
+
+  canvas#trace{position:absolute;left:0;right:0;bottom:0;height:38vh;
+    pointer-events:none}
+
+  .eyebrow{font-family:var(--sans);font-weight:700;font-size:13px;letter-spacing:.08em;
+    text-transform:uppercase;color:var(--amber);margin-bottom:14px;
+    display:flex;align-items:center;gap:10px}
+  .eyebrow .dot{width:7px;height:7px;border-radius:50%;background:var(--amber);
+    box-shadow:0 0 0 3px var(--amber-soft)}
+
+  h1{font-size:clamp(30px,4.2vw,52px);line-height:1.14;font-weight:700;
+    margin:0 0 20px;max-width:16ch;text-wrap:balance;position:relative;z-index:1}
+  .lede{font-family:var(--sans);font-size:15.5px;color:var(--ink-soft);
+    max-width:64ch;margin:0 0 40px;line-height:1.6;position:relative;z-index:1}
+
+  .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;
+    position:relative;z-index:1;max-width:1180px}
+  @media (max-width:920px){.cards{grid-template-columns:1fr}}
+
+  .card{background:var(--panel);border:1px solid var(--panel-line);
+    border-radius:12px;padding:22px 24px;display:flex;flex-direction:column;gap:10px}
+  .card .k{font-family:var(--sans);font-weight:700;font-size:12px;letter-spacing:.08em;
+    text-transform:uppercase;color:var(--ink-faint)}
+  .card .t{font-size:18px;font-weight:600;color:var(--ink)}
+  .card .d{font-size:14.5px;color:var(--ink-soft);line-height:1.55}
+  .card.accent-mucT{border-top:2px solid var(--amber)}
+  .card.accent-chucN{border-top:2px solid var(--cyan)}
+  .card.accent-output{border-top:2px solid var(--green)}
+
+  /* slide 2 — glossary */
+  .glossary{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;
+    position:relative;z-index:1;max-width:1180px}
+  @media (max-width:920px){.glossary{grid-template-columns:1fr}}
+  .term{background:var(--panel);border:1px solid var(--panel-line);
+    border-radius:12px;padding:20px 22px}
+  .term .name{font-family:var(--sans);font-size:16px;font-weight:700;
+    margin-bottom:3px}
+  .term .name.ascii{font-family:var(--mono);letter-spacing:.02em}
+  .term .full{font-family:var(--sans);font-size:12px;color:var(--ink-faint);margin-bottom:10px}
+  .term .expl{font-size:13.5px;color:var(--ink-soft);line-height:1.55}
+  .term.dom-time .name{color:var(--amber)}
+  .term.dom-freq .name{color:var(--cyan)}
+  .term.dom-state .name{color:var(--ink)}
+  .badge{display:inline-block;font-family:var(--sans);font-weight:700;font-size:11px;
+    letter-spacing:.02em;padding:2px 8px;
+    border-radius:20px;margin-left:8px;vertical-align:middle}
+  .badge.time{background:var(--amber-soft);color:var(--amber)}
+  .badge.freq{background:var(--cyan-soft);color:var(--cyan)}
+  .pill{display:inline-flex;align-items:center;gap:6px;font-family:var(--sans);
+    font-size:12px;padding:2px 9px;border-radius:20px;font-weight:700}
+  .pill.ok{background:var(--green-soft);color:var(--green)}
+  .pill.bad{background:var(--rose-soft);color:var(--rose)}
+
+  /* nav */
+  .nav{position:fixed;right:28px;bottom:28px;display:flex;gap:10px;
+    align-items:center;z-index:5;font-family:var(--mono)}
+  .nav button{width:38px;height:38px;border-radius:50%;border:1px solid var(--panel-line);
+    background:var(--panel);color:var(--ink);cursor:pointer;font-size:16px;
+    display:flex;align-items:center;justify-content:center;transition:background .2s,border-color .2s,color .2s}
+  .nav button:hover{border-color:var(--amber);color:var(--amber)}
+  .nav button:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+  .nav .count{font-size:12px;color:var(--ink-faint);min-width:38px;text-align:center}
+
+  .theme-toggle{position:fixed;left:28px;bottom:28px;z-index:5;
+    width:38px;height:38px;border-radius:50%;border:1px solid var(--panel-line);
+    background:var(--panel);color:var(--ink);cursor:pointer;font-size:16px;
+    display:flex;align-items:center;justify-content:center;
+    transition:background .2s,border-color .2s,color .2s}
+  .theme-toggle:hover{border-color:var(--amber);color:var(--amber)}
+  .theme-toggle:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+
+  .kicker-num{position:absolute;top:clamp(24px,4vw,56px);right:clamp(28px,6vw,72px);
+    font-family:var(--mono);font-size:13px;color:var(--ink-faint);z-index:2}
+
+  @media (prefers-reduced-motion:reduce){
+    .deck{scroll-behavior:auto}
+    canvas#trace{display:none}
+  }
+</style>
+</head>
+<body>
+
+<div class="deck" id="deck">
+
+  <section class="slide" id="s1">
+    <canvas id="trace"></canvas>
+    <div class="kicker-num">01 / 02</div>
+    <div class="eyebrow"><span class="dot"></span>Usecase 1 — Trước khi vào demo</div>
+    <h1>Giám sát mỏi cơ thời gian thực trong buổi tập phục hồi chức năng</h1>
+    <p class="lede">Kỹ thuật viên vật lý trị liệu gắn cảm biến sEMG 64 điện cực lên cơ đang tập
+      (VD: cơ nhị đầu tay). Hệ thống theo dõi và phân loại Mỏi / Không mỏi theo thời gian thực
+      trong suốt buổi tập.</p>
+
+    <div class="cards">
+      <div class="card accent-mucT">
+        <div class="k">Mục tiêu</div>
+        <div class="t">Phát hiện đúng thời điểm mỏi</div>
+        <div class="d">Nhận biết đúng lúc cơ bắt đầu mỏi quá mức, tránh tập bù trừ sai tư thế
+          hoặc chấn thương do tập quá sức.</div>
+      </div>
+      <div class="card accent-chucN">
+        <div class="k">Chức năng</div>
+        <div class="t">Giám sát 64 điện cực real-time</div>
+        <div class="d">Theo dõi tín hiệu sEMG 64 điện cực theo thời gian thực, phát hiện mỏi cơ
+          theo từng vùng, cảnh báo tự động.</div>
+      </div>
+      <div class="card accent-output">
+        <div class="k">Output</div>
+        <div class="t">Trạng thái + sơ đồ + khuyến nghị</div>
+        <div class="d">Trạng thái Mỏi/Không mỏi real-time, sơ đồ 64 điện cực đổi màu theo vùng,
+          và khuyến nghị hành động khi phát hiện mỏi.</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide" id="s2">
+    <div class="kicker-num">02 / 02</div>
+    <div class="eyebrow"><span class="dot"></span>Thuật ngữ xuất hiện trong demo</div>
+    <h1>Đọc hiểu các chỉ số trên màn hình demo</h1>
+    <p class="lede">Mỗi thuật ngữ dưới đây gắn với đúng con số / vùng bạn sẽ thấy khi buổi tập
+      chạy — màu <span class="badge time">miền thời gian</span> và
+      <span class="badge freq">miền tần số</span> khớp với 2 đường trong biểu đồ
+      "Xu hướng RMS &amp; MDF" của demo.</p>
+
+    <div class="glossary">
+      <div class="term dom-time">
+        <div class="name ascii">RMS <span class="badge time">biên độ</span></div>
+        <div class="full">Root Mean Square</div>
+        <div class="expl">"Cơ đang gồng mạnh cỡ nào." Khi mỏi, cơ phải huy động thêm sợi cơ để
+          bù lực đã mất → biên độ tín hiệu tăng dần.</div>
+      </div>
+      <div class="term dom-freq">
+        <div class="name ascii">MDF <span class="badge freq">tần số</span></div>
+        <div class="full">Median Frequency</div>
+        <div class="expl">"Tín hiệu dao động nhanh hay chậm." Khi mỏi, tốc độ dẫn truyền thần
+          kinh–cơ chậm lại → tần số trung vị giảm dần.</div>
+      </div>
+      <div class="term dom-time">
+        <div class="name ascii">%MVC</div>
+        <div class="full">Maximum Voluntary Contraction</div>
+        <div class="expl">Mức cường độ co cơ hiện tại so với lực tối đa bệnh nhân từng đo được —
+          dùng để chuẩn hoá bài tập giữa các bệnh nhân.</div>
+      </div>
+      <div class="term dom-state">
+        <div class="name">Sơ đồ 64 điện cực</div>
+        <div class="full">Ma trận 13 × 5, IED 8mm</div>
+        <div class="expl">Mỗi điểm là 1 kênh đo độc lập trên cơ, tự tô
+          <span class="pill ok">● không mỏi</span> /
+          <span class="pill bad">● mỏi</span> riêng theo từng vùng.</div>
+      </div>
+      <div class="term dom-state">
+        <div class="name">Trạng thái Mỏi / Không mỏi</div>
+        <div class="full">Nhãn phân loại nhị phân</div>
+        <div class="expl">Kết quả của model học máy, tổng hợp từ 14 đặc trưng tín hiệu — không
+          phải chỉ đọc riêng RMS hay MDF.</div>
+      </div>
+      <div class="term dom-state">
+        <div class="name ascii">F1-score</div>
+        <div class="full">Độ chính xác trên người chưa từng thấy</div>
+        <div class="expl">Đo trên 1 bệnh nhân giữ riêng, không dùng để huấn luyện — phản ánh khả
+          năng dùng được cho người mới.</div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<button class="theme-toggle" id="themeBtn" aria-label="Chuyển giao diện sáng/tối">🌙</button>
+
+<div class="nav">
+  <button id="prevBtn" aria-label="Slide trước">‹</button>
+  <span class="count" id="count">1/2</span>
+  <button id="nextBtn" aria-label="Slide sau">›</button>
+</div>
+
+<script>
+(function(){
+  const root = document.documentElement;
+  const themeBtn = document.getElementById('themeBtn');
+  function applyTheme(mode){
+    root.setAttribute('data-theme', mode);
+    themeBtn.textContent = mode === 'dark' ? '🌙' : '☀️';
+    localStorage.setItem('usecase1-theme', mode);
+  }
+  const storedTheme = localStorage.getItem('usecase1-theme');
+  const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  applyTheme(storedTheme || (systemDark ? 'dark' : 'light'));
+  themeBtn.addEventListener('click', ()=>{
+    applyTheme(root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+  });
+
+  const deck = document.getElementById('deck');
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  const countEl = document.getElementById('count');
+
+  function current(){
+    const y = deck.scrollTop, h = window.innerHeight;
+    return Math.round(y / h);
+  }
+  function go(i){
+    i = Math.max(0, Math.min(slides.length - 1, i));
+    slides[i].scrollIntoView({behavior:'smooth'});
+  }
+  function updateCount(){ countEl.textContent = (current()+1) + '/' + slides.length; }
+
+  document.getElementById('prevBtn').addEventListener('click', ()=>go(current()-1));
+  document.getElementById('nextBtn').addEventListener('click', ()=>go(current()+1));
+  window.addEventListener('keydown', (e)=>{
+    if(e.key==='ArrowDown'||e.key==='ArrowRight'||e.key===' '){e.preventDefault();go(current()+1);}
+    if(e.key==='ArrowUp'||e.key==='ArrowLeft'){e.preventDefault();go(current()-1);}
+  });
+  deck.addEventListener('scroll', ()=>{ clearTimeout(window.__t); window.__t=setTimeout(updateCount,80); });
+  updateCount();
+
+  // Ambient EMG-like trace behind slide 1 — decorative only, respects reduced-motion.
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const canvas = document.getElementById('trace');
+  if(canvas && !reduced){
+    const ctx = canvas.getContext('2d');
+    let w,h,dpr;
+    function size(){
+      dpr = window.devicePixelRatio||1;
+      w = canvas.clientWidth = canvas.parentElement.clientWidth;
+      h = canvas.clientHeight = window.innerHeight*0.38;
+      canvas.width = w*dpr; canvas.height = h*dpr;
+      ctx.setTransform(dpr,0,0,dpr,0,0);
+    }
+    size(); window.addEventListener('resize', size);
+
+    let t = 0;
+    function noise(x, seed){
+      return Math.sin(x*0.11+seed)*0.5 + Math.sin(x*0.27+seed*1.7)*0.3 + Math.sin(x*0.53+seed*0.4)*0.2;
+    }
+    function cssVar(name){
+      return getComputedStyle(root).getPropertyValue(name).trim();
+    }
+    function frame(){
+      t += 0.015;
+      ctx.clearRect(0,0,w,h);
+      const traces = [
+        {color:cssVar('--amber'), alpha:0.55, base:h*0.55, amp:h*0.16, seed:1.2, spike:0.10},
+        {color:cssVar('--cyan'), alpha:0.38, base:h*0.78, amp:h*0.08, seed:4.4, spike:0.02},
+      ];
+      traces.forEach(tr=>{
+        ctx.beginPath();
+        ctx.lineWidth = 1.6;
+        ctx.strokeStyle = tr.color;
+        ctx.globalAlpha = tr.alpha;
+        for(let x=0; x<=w; x+=3){
+          const px = x*0.02 + t*6 + tr.seed*10;
+          let y = tr.base + noise(px, tr.seed) * tr.amp;
+          if (Math.random() < tr.spike*0.02) y -= tr.amp*2.2;
+          x===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+        }
+        ctx.stroke();
+      });
+      ctx.globalAlpha = 1;
+      requestAnimationFrame(frame);
+    }
+    frame();
+  }
+})();
+</script>
+</body>
+</html>
