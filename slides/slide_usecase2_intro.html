@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Use Case 2 — Giám sát Phục hồi Cơ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+  html,body{
+    height:100%;
+    font-family:'Inter',system-ui,-apple-system,sans-serif;
+    background:#0B1622;
+    color:#E8ECF1;
+    overflow:hidden;
+  }
+
+  /* ── full-screen slide container ── */
+  .slide{
+    width:100vw;height:100vh;
+    display:flex;flex-direction:column;
+    justify-content:center;align-items:center;
+    position:relative;
+    padding:4vh 6vw;
+  }
+
+  /* ── ambient background glow ── */
+  .slide::before{
+    content:'';position:absolute;inset:0;
+    background:
+      radial-gradient(ellipse 70% 50% at 15% 80%, rgba(27,122,125,.25) 0%, transparent 70%),
+      radial-gradient(ellipse 60% 40% at 85% 20%, rgba(232,96,76,.15) 0%, transparent 70%);
+    pointer-events:none;z-index:0;
+  }
+
+  .content{position:relative;z-index:1;max-width:1200px;width:100%;text-align:center;}
+
+  /* ── top badge ── */
+  .badge{
+    display:inline-flex;align-items:center;gap:10px;
+    background:rgba(27,122,125,.18);border:1px solid rgba(27,122,125,.35);
+    border-radius:40px;padding:8px 24px;
+    font-size:clamp(.8rem,1.1vw,.95rem);font-weight:600;
+    color:#5EC6C8;letter-spacing:.5px;
+    margin-bottom:2.5vh;
+    backdrop-filter:blur(6px);
+  }
+  .badge .dot{width:8px;height:8px;border-radius:50%;background:#1B7A7D;
+    box-shadow:0 0 8px rgba(27,122,125,.6);animation:pulse 2s infinite;}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+  /* ── title ── */
+  h1{
+    font-size:clamp(2.4rem,4.5vw,4.2rem);
+    font-weight:900;line-height:1.15;
+    letter-spacing:-1px;
+    margin-bottom:1.2vh;
+    background:linear-gradient(135deg,#FFFFFF 30%,#5EC6C8 100%);
+    -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+    background-clip:text;
+  }
+  .subtitle{
+    font-size:clamp(1rem,1.6vw,1.35rem);
+    color:#8B9DB7;font-weight:500;
+    margin-bottom:4vh;
+  }
+
+  /* ── 4-column grid ── */
+  .grid{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:clamp(12px,1.5vw,24px);
+    margin-bottom:4vh;
+  }
+
+  .card{
+    background:rgba(255,255,255,.04);
+    border:1px solid rgba(255,255,255,.08);
+    border-radius:16px;padding:clamp(18px,2vw,28px);
+    text-align:left;
+    backdrop-filter:blur(8px);
+    transition:border-color .3s,transform .3s;
+  }
+  .card:hover{border-color:rgba(27,122,125,.45);transform:translateY(-2px);}
+
+  .card .icon{
+    width:44px;height:44px;border-radius:12px;
+    display:flex;align-items:center;justify-content:center;
+    font-size:1.3rem;margin-bottom:14px;
+  }
+  .card:nth-child(1) .icon{background:rgba(27,122,125,.18);color:#5EC6C8;}
+  .card:nth-child(2) .icon{background:rgba(232,96,76,.15);color:#E8604C;}
+  .card:nth-child(3) .icon{background:rgba(39,174,96,.15);color:#27AE60;}
+  .card:nth-child(4) .icon{background:rgba(155,89,182,.15);color:#BB6BD9;}
+
+  .card .label{
+    font-size:clamp(.65rem,.85vw,.75rem);
+    font-weight:700;text-transform:uppercase;letter-spacing:1.2px;
+    color:#5A6B80;margin-bottom:8px;
+  }
+  .card p{
+    font-size:clamp(.85rem,1.1vw,1.05rem);
+    line-height:1.55;color:#C5CED8;font-weight:500;
+  }
+  .card p strong{color:#FFFFFF;}
+
+  /* ── output banner ── */
+  .output-row{
+    display:flex;align-items:center;justify-content:center;gap:20px;
+    flex-wrap:wrap;margin-bottom:3vh;
+  }
+  .output-tag{
+    display:inline-flex;align-items:center;gap:8px;
+    background:rgba(27,122,125,.12);border:1px solid rgba(27,122,125,.25);
+    border-radius:10px;padding:10px 20px;
+    font-size:clamp(.8rem,1vw,.95rem);font-weight:600;color:#5EC6C8;
+  }
+  .output-tag .check{color:#27AE60;font-size:1.1em;}
+
+  /* ── bottom disclaimer ── */
+  .footer{
+    font-size:clamp(.7rem,.85vw,.8rem);
+    color:#4A5568;font-weight:500;
+    letter-spacing:.3px;
+  }
+  .footer span{color:#5A6B80;}
+
+  /* ── responsive ── */
+  @media(max-width:900px){
+    .grid{grid-template-columns:repeat(2,1fr);}
+  }
+  @media(max-width:560px){
+    .grid{grid-template-columns:1fr;}
+    .output-row{flex-direction:column;}
+  }
+</style>
+</head>
+<body>
+<div class="slide">
+  <div class="content">
+
+    <!-- Badge -->
+    <div class="badge">
+      <span class="dot"></span>
+      sEMG Fatigue Analysis Platform
+    </div>
+
+    <!-- Title -->
+    <h1>Use Case 2: Giám sát Phục hồi Cơ</h1>
+    <p class="subtitle">Muscle Recovery Monitoring — Theo dõi sức bền và phục hồi qua nhiều buổi trị liệu</p>
+
+    <!-- 4-column info grid -->
+    <div class="grid">
+
+      <div class="card">
+        <div class="icon">🎯</div>
+        <div class="label">Mục tiêu</div>
+        <p>Đánh giá <strong>cơ có thực sự khoẻ hơn</strong> qua từng buổi trị liệu — đo bằng chỉ số khách quan từ tín hiệu sEMG.</p>
+      </div>
+
+      <div class="card">
+        <div class="icon">⚙️</div>
+        <div class="label">Chức năng</div>
+        <p>Tính <strong>P(mỏi)</strong> bằng KNN 7 đặc trưng. So sánh <strong>sức bền</strong> và <strong>chỉ số đối xứng lành–liệt</strong> qua các buổi.</p>
+      </div>
+
+      <div class="card">
+        <div class="icon">📊</div>
+        <div class="label">Dữ liệu</div>
+        <p><strong>HD-sEMG 64 kênh</strong>, 2000 Hz. Bộ dữ liệu PhysioMio bệnh nhân đột quỵ + mô phỏng co cơ duy trì.</p>
+      </div>
+
+      <div class="card">
+        <div class="icon">📋</div>
+        <div class="label">Ý nghĩa lâm sàng</div>
+        <p>Hỗ trợ KTV phục hồi chức năng <strong>theo dõi tiến triển</strong> và điều chỉnh phác đồ trị liệu theo bằng chứng.</p>
+      </div>
+
+    </div>
+
+    <!-- Output tags -->
+    <div class="output-row">
+      <div class="output-tag"><span class="check">✓</span> Biểu đồ P(mỏi) so sánh 2 buổi</div>
+      <div class="output-tag"><span class="check">✓</span> Điểm sức bền qua 8 buổi</div>
+      <div class="output-tag"><span class="check">✓</span> Symmetry Index lành–liệt</div>
+      <div class="output-tag"><span class="check">✓</span> Khám phá tín hiệu gốc</div>
+    </div>
+
+    <!-- Footer -->
+    <p class="footer">Dữ liệu demo: mô phỏng + PhysioMio &nbsp;·&nbsp; <span>Mô hình: KNN (k=7, F1 = 0.928)</span> &nbsp;·&nbsp; <span>Kết quả hỗ trợ đánh giá, không thay thế chẩn đoán</span></p>
+
+  </div>
+</div>
+</body>
+</html>

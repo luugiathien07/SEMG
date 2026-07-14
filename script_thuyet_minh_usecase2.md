@@ -6,17 +6,22 @@
 
 ---
 
-## PHẦN 1 — GIỚI THIỆU VÀ CHUYỂN TAB (0:00 – 0:30)
+## PHẦN 1 — SLIDE GIỚI THIỆU VÀ MỤC TIÊU USE CASE 2 (0:00 – 0:30)
 
-`[🖱️ Màn hình đang ở tab "Giám sát Mỏi cơ (Real-time)" — tab của Use Case 1]`
+`[🖱️ Màn hình đang hiển thị Slide Giới thiệu Use Case 2 (Nền trắng, chữ to)]`
 
-> Use Case 1 vừa trình bày cách phát hiện mỏi cơ **trong một buổi tập**. Bây giờ chúng ta chuyển sang Use Case 2: **Giám sát Phục hồi Cơ** — theo dõi quá trình phục hồi **qua nhiều buổi trị liệu**.
+> Xin chào các sếp và anh/chị. Tiếp nối Use Case 1 về việc phát hiện mỏi cơ tức thời, bây giờ chúng ta sẽ bước sang **Use Case 2: Giám sát Phục hồi Cơ**.
 
-`[🖱️ Click vào tab "Giám sát phục hồi cơ"]`
+`[🖱️ Di chuột nhẹ qua các thẻ Mục tiêu, Chức năng, Output trên slide]`
 
-> ⏸️
+> Câu hỏi cốt lõi mà Use Case 2 giải quyết là: **"Bệnh nhân tập vật lý trị liệu nhiều buổi rồi, cơ có thực sự khoẻ hơn không?"** — và khoẻ hơn **bao nhiêu**, đo bằng **con số định lượng** nào.
+>
+> Để làm được điều này, hệ thống cung cấp tính năng theo dõi tiến triển **sức bền** của cơ, đối chiếu đường cong mỏi cơ giữa các buổi, và theo dõi các chỉ số sinh học quan trọng.
+> Kết quả trả ra là một **Dashboard tổng hợp** đa chiều, giúp bác sĩ đưa ra đánh giá chính xác về hiệu quả phục hồi.
 
-> Câu hỏi cốt lõi của Use Case 2 là: **"Bệnh nhân tập nhiều buổi rồi, cơ có thực sự khoẻ hơn không?"** — và nếu có, thì khoẻ hơn **bao nhiêu**, đo bằng **con số** nào.
+`[🖱️ Click nút "Bắt đầu Demo →" trên slide để chuyển vào Dashboard UC2]`
+
+> ⏸️ (Đợi 1-2 giây cho hiệu ứng chuyển trang)
 
 ---
 
