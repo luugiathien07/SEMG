@@ -42,6 +42,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from sklearn.base import clone
+from sklearn.calibration import CalibratedClassifierCV
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.metrics import (
     accuracy_score,
@@ -153,8 +154,9 @@ def build_loso_models() -> dict[str, Pipeline]:
         ]),
         "SVM(linear)": Pipeline([
             ("scale", StandardScaler()),
-            ("clf", SVC(kernel="linear", probability=True,
-                        random_state=config.RANDOM_STATE)),
+            ("clf", CalibratedClassifierCV(
+                SVC(kernel="linear", random_state=config.RANDOM_STATE),
+                ensemble=False)),
         ]),
         "LDA": Pipeline([
             ("scale", StandardScaler()),

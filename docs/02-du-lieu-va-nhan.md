@@ -12,7 +12,7 @@ Cả hai bài báo dùng chung một bộ dữ liệu:
   **bài kiểm tra gây mỏi ở 70% MVC** → đo lại 10% MVC (sau mỏi). Nghỉ 5 phút giữa
   các lần đo.
 
-Trong bộ demo có **5 đối tượng** (subject 5, 7, 8, 9, 11).
+Trong bộ demo có **10 đối tượng** (subject 5–14).
 
 ## 2.2. Định dạng file
 
@@ -90,8 +90,8 @@ Code MATLAB gốc chia train/test bằng **thư mục** (`Train_Data` vs `Test_D
 `Import.m` gom dữ liệu **theo từng subject** (chuẩn bị cho leave-one-subject-out).
 Bộ dữ liệu demo phẳng nên ta **tái tạo lại cách chia theo đối tượng**:
 
-- **Train:** subject **{5, 7, 8, 11}**.
-- **Test:** subject **9** (giữ riêng hoàn toàn — mô hình chưa từng thấy).
+- **Train:** subject **{5, 7, 8, 9, 10, 11, 12, 13, 14}**.
+- **Test:** subject **6** (giữ riêng hoàn toàn — mô hình chưa từng thấy).
 
 Cách này đo đúng khả năng **tổng quát hoá cho người mới**, thay vì trộn ngẫu nhiên
 các kênh của cùng một người vào cả train lẫn test (sẽ rò rỉ và cho điểm ảo cao).
@@ -99,20 +99,21 @@ các kênh của cùng một người vào cả train lẫn test (sẽ rò rỉ 
 > Ghi chú tham khảo: bài BME 2024 cũng dùng leave-one-subject-out; ICACE 2019 thì
 > chia 80/20 ngẫu nhiên. Demo theo cách chia theo subject như trên.
 
-## 2.7. Thống kê tập dữ liệu (demo hiện tại)
+## 2.7. Thống kê tập dữ liệu (demo hiện tại, cập nhật 2026-07-14)
 
 | Chỉ số | Giá trị |
 |---|---|
-| Tổng số mẫu (kênh × file hợp lệ) | **1270** |
-| Trong đó Normal / Fatigue | 950 / 320 |
-| Số file | 20 |
-| Tập train (subject 5,7,8,11) | 824 mẫu (Normal 632, Fatigue 192) |
-| Tập test (subject 9) | 446 mẫu (Normal 318, Fatigue 128) |
+| Tổng số mẫu (kênh × file hợp lệ) | **4326** |
+| Trong đó Normal / Fatigue | 3074 / 1252 |
+| Số file | 69 |
+| Tập train (subject 5,7,8,9,10,11,12,13,14) | 3878 mẫu (Normal 2754, Fatigue 1124) |
+| Tập test (subject 6) | 448 mẫu (Normal 320, Fatigue 128) |
 
-> Số liệu sau khi đổi sang gán nhãn theo ngưỡng %MVC > 60 (2026-07-09, mục 2.4):
-> file `90` chuyển sang Fatigue nên lớp Fatigue tăng trở lại so với lần sửa
-> `10_ap_fatigue` trước đó, tỉ lệ mất cân bằng cũng dịu hơn (train ≈ 3.3:1 thay vì
-> 5.4:1).
+> Dataset đã được bổ sung đầy đủ file cho tất cả 10 subject (trước đó demo chỉ có
+> 5 subject: 5, 7, 8, 9, 11 — xem 2.1). Số mẫu tăng từ 1270 → 4326. Tập train/test
+> cũng đổi theo (test hiện là subject 6, không còn là subject 9). Xem thêm đánh giá
+> đầy đủ leave-one-subject-out qua **cả 10 subject** trong `results/loso_results.txt`
+> và `results/new_results.txt`.
 
 Các con số này in ra khi chạy `python -m src.pipeline` và hiển thị ở tab
 **Overview** của Streamlit.

@@ -4,13 +4,13 @@ LEAVE-ONE-SUBJECT-OUT — single held-out fold (BME 2024 protocol)
 Held-out TEST subject : 6
 TRAIN subjects        : [5, 7, 8, 9, 10, 11, 12, 13, 14]
 Labeling scheme       : mvc  (MVC>60 -> Fatigue)
-Train samples         : 2212  (Normal=1640, Fatigue=572)
-Test samples (subj 6) : 256  (Normal=192, Fatigue=64)
+Train samples         : 3878  (Normal=2754, Fatigue=1124)
+Test samples (subj 6) : 448  (Normal=320, Fatigue=128)
 ----------------------------------------------------------------------
 Model            Acc    Prec     Rec      F1     AUC   (positive=Fatigue)
-KNN(1NN)     0.988 0.955 1.000 0.977 0.992
-KNN(5NN)     0.992 0.970 1.000 0.985 1.000
-SVM(linear)  0.812 0.571 1.000 0.727 0.994
-LDA          0.836 0.606 0.984 0.750 0.990
+KNN(1NN)     0.991 0.992 0.977 0.984 0.987
+KNN(5NN)     0.987 0.992 0.961 0.976 0.995
+SVM(linear)  0.926 0.806 0.977 0.883 0.996
+LDA          0.940 0.839 0.977 0.903 0.997
 ======================================================================
 Reference (paper KNN, single favorable fold): F1=0.9541, AUC~0.95
