@@ -33,8 +33,9 @@ càng đậm/càng lớn thì mô hình càng tốt.
 | **Recall** (độ nhạy / Sensitivity / TPR) | TP / (TP+FN) | Trong số ca **mỏi thật**, phát hiện được bao nhiêu %? | Khi bỏ sót mỏi là nguy hiểm (giảm FN). |
 | **F1-Score** (trung bình điều hòa) | 2·P·R / (P+R) | Cân bằng tổng hợp giữa Precision và Recall. | Chỉ số chính khi lớp lệch — phản ánh chất lượng tốt hơn Accuracy. |
 
-> Vì tập test lệch lớp (Normal 318 vs Fatigue 128), **F1-Score** và **AUC** được
-> chọn làm **chỉ số đánh giá chính (Primary Metrics)** thay vì Accuracy đơn thuần.
+> Vì tập test lệch lớp (Normal 320 vs Fatigue 128, subject 6 hiện tại), **F1-Score**
+> và **AUC** được chọn làm **chỉ số đánh giá chính (Primary Metrics)** thay vì
+> Accuracy đơn thuần.
 
 ## 5.3. ROC và AUC (Threshold-Independent Evaluation)
 
@@ -63,43 +64,75 @@ Cột **CV-Acc** là độ chính xác ước lượng bằng **StratifiedKFold*
 tại `config.CV_FOLDS`) *trên tập train*. Stratified đảm bảo tỷ lệ Normal/Fatigue
 được duy trì đều trong mỗi fold.
 
-> CV-Acc (trên train) và Accuracy (trên subject 9 giữ riêng) đo hai thứ khác nhau.
+> CV-Acc (trên train) và Accuracy (trên subject 6 giữ riêng) đo hai thứ khác nhau.
 > CV-Acc cao nhưng test thấp → mô hình **khó tổng quát** sang người mới (dấu hiệu
-> overfit). Ví dụ: DecisionTree có CV-Acc ≈ 0.982 nhưng test chỉ ≈ 0.800.
+> overfit).
 
 ## 5.5. Phương pháp kiểm định — Leave-One-Subject-Out (LOSO)
 
 Tín hiệu sEMG mang tính cá thể hoá rất cao. Nếu trộn dữ liệu cùng một người vào
 cả train lẫn test sẽ gây **rò rỉ dữ liệu (Data Leakage)**, cho điểm ảo cao.
 
-Hệ thống tách bạch hoàn toàn theo đối tượng:
-- **Train:** Subject {5, 7, 8, 11} → 824 mẫu (Normal 506, Fatigue 318).
-- **Test:** Subject 9 → 446 mẫu (Normal 318, Fatigue 128).
+Hệ thống tách bạch hoàn toàn theo đối tượng. Có **hai cách chạy LOSO** trong dự án:
+
+**(a) Single-split cố định** (`config.TRAIN_SUBJECTS`/`TEST_SUBJECT`, dùng cho tab
+Classification của Streamlit và `python -m src.pipeline`):
+- **Train:** Subject {5, 7, 8, 9, 10, 11, 12, 13, 14} → 3878 mẫu (Normal 2754, Fatigue 1124).
+- **Test:** Subject 6 → 448 mẫu (Normal 320, Fatigue 128).
+
+**(b) LOSO đầy đủ** (`scripts/run_loso.py` → `results/loso_results.txt`): lặp lại
+(a) **10 lần**, mỗi lần giữ 1 subject khác nhau làm test — cho bức tranh đầy đủ về
+độ ổn định của mô hình qua nhiều subject, thay vì chỉ 1 con số của cách (a). Xem
+mục 5.6b.
 
 Cách chia này đo đúng **khả năng tổng quát hoá cho người dùng mới** — tiêu chuẩn
 bắt buộc trong nghiên cứu sEMG quốc tế (BME 2024 cũng dùng LOSO).
 
-## 5.6. Bảng kết quả demo (test trên Subject 9)
+## 5.6. Bảng kết quả demo
+
+### 5.6a. Single-split (test trên Subject 6, `python -m src.pipeline`)
 
 | Mô hình | Feature Set | Accuracy | Precision | Recall | F1 | CV-Acc | AUC |
 |---|---|---|---|---|---|---|---|
-| SVM | Top-3 mRMR | 0.951 | 0.853 | **1.000** | 0.921 | 0.904 | 0.977 |
-| KNN | All 14 | 0.933 | **0.938** | 0.820 | 0.875 | 0.990 | 0.899 |
-| **LDA** | All 14 | **0.957** | 0.876 | 0.992 | **0.930** | 0.988 | **0.996** |
-| DecisionTree | All 14 | 0.800 | 0.654 | 0.648 | 0.651 | 0.982 | 0.755 |
+| **KNN(1NN)** | All 14 | **0.991** | **0.992** | 0.977 | **0.984** | 0.996 | 0.987 |
+| KNN(5NN) | All 14 | 0.987 | 0.992 | 0.961 | 0.976 | 0.993 | 0.995 |
+| SVM(linear) | All 14 | 0.900 | 0.740 | **1.000** | 0.850 | 0.934 | 0.996 |
+| LDA | All 14 | 0.940 | 0.839 | 0.977 | 0.903 | 0.929 | **0.997** |
 
 **Phân tích kết quả:**
 
-- **LDA là mô hình tốt nhất tổng thể:** F1 cao nhất (0.930), AUC cao nhất (0.996 —
-  mức *Outstanding*), Accuracy cao nhất (0.957).
+- **KNN(1-NN) tốt nhất trên fold này:** F1 cao nhất (0.984), Accuracy cao nhất
+  (0.991), Precision cao nhất (0.992).
 - **SVM đạt Recall = 1.000:** không bỏ sót bất kỳ ca mỏi nào, nhưng Precision thấp
-  hơn (0.853) — tức có một số ca bình thường bị báo nhầm là mỏi.
-- **KNN có Precision cao nhất (0.938):** khi máy báo mỏi thì gần như chắc chắn đúng,
-  nhưng Recall chỉ 0.820 — bỏ sót 18% ca mỏi thật.
-- **DecisionTree có dấu hiệu overfit rõ rệt:** CV-Acc = 0.982 (rất cao trên train)
-  nhưng test chỉ 0.800. F1 = 0.651 và AUC = 0.755 — mức chỉ *Acceptable*.
+  hơn (0.740) — báo nhầm khá nhiều ca bình thường thành mỏi.
+- **LDA có AUC cao nhất (0.997):** khả năng xếp hạng lớp Fatigue tốt nhất, dù
+  ngưỡng 0.5 mặc định cho F1 thấp hơn KNN.
+- **Lưu ý quan trọng:** subject 6 là fold **thuận lợi nhất** trong 10 fold LOSO
+  (xem 5.6b) — không nên dùng riêng bảng này để kết luận về khả năng tổng quát
+  của mô hình. Chi tiết diễn giải ở [tài liệu 07](07-giai-thich-ket-qua-cho-mentor.md).
 
-**Top-3 đặc trưng mRMR (dùng cho SVM):** `Spectral_Entropy`, `Spectral_STD`, `Max`.
+**Top-3 đặc trưng mRMR** (chỉ để báo cáo, không giới hạn đặc trưng của model nào):
+`MAV`, `Spectral_Max`, `Kurtosis`.
+
+### 5.6b. LOSO đầy đủ — trung bình & pooled qua cả 10 subject
+
+Chạy `python -m scripts.run_loso` (nhãn theo ngưỡng %MVC > 60), kết quả đầy đủ ở
+`results/loso_results.txt` / `results/new_results.txt`:
+
+| Mô hình | TB F1 ± SD (10 fold) | TB Acc | TB AUC | Pooled F1 | Pooled AUC |
+|---|---|---|---|---|---|
+| KNN(1NN) | 0.842 ± 0.089 | 0.910 | 0.894 | 0.847 | 0.895 |
+| KNN(5NN) | 0.827 ± 0.112 | 0.906 | 0.939 | 0.835 | 0.935 |
+| SVM(linear) | 0.811 ± 0.110 | 0.895 | 0.964 | 0.824 | 0.954 |
+| LDA | 0.826 ± 0.103 | 0.906 | 0.979 | 0.836 | 0.965 |
+
+- **TB F1 ± SD:** trung bình cộng F1 của 10 fold (mỗi subject trọng số bằng nhau).
+- **Pooled F1/AUC:** gộp dự đoán của cả 10 fold thành 1 confusion matrix rồi tính
+  1 lần (mỗi mẫu trọng số bằng nhau).
+- F1 từng fold dao động rộng: thấp nhất subject 13 (KNN 1NN F1=0.699), cao nhất
+  subject 6 (F1=0.984) — đúng là fold được chọn cho bảng 5.6a. Đây là lý do bảng
+  5.6b (trung bình/pooled) đáng tin cậy hơn bảng 5.6a khi muốn báo cáo hiệu năng
+  tổng quát của mô hình.
 
 ## 5.7. Đối chiếu với kết quả gốc của bài báo BME 2024
 
@@ -113,9 +146,12 @@ Bảng 2 trong bài báo (test theo leave-one-subject-out, 10 đối tượng):
 | Recall | 0.917 | 0.843 | 0.861 | **0.935** |
 
 - Trong bài báo, **KNN tốt nhất** (F1 0.954, AUC 0.95); LDA và SVM tuyến tính theo sau.
-- Demo cho **xu hướng tương đồng** (nhóm SVM/LDA/KNN đều mạnh), xác nhận pipeline
-  chuyển đổi hợp lý. Con số tuyệt đối khác vì demo chỉ dùng **5/10 đối tượng** và
-  **bỏ bước wavelet denoising** (xem [tài liệu 07](07-giai-thich-ket-qua-cho-mentor.md)).
+- Bảng 2 của bài chỉ có **1 con số mỗi model**, không có SD hay bảng per-subject —
+  nhiều khả năng đó là kết quả của **một fold LOSO cụ thể**, không phải trung bình
+  qua nhiều fold (xem phân tích ở [tài liệu 07](07-giai-thich-ket-qua-cho-mentor.md)).
+- So sánh công bằng nhất là dùng **bảng 5.6b (trung bình/pooled LOSO)** của demo,
+  không phải bảng 5.6a (1 fold thuận lợi) — theo 5.6b, demo **thấp hơn** bài báo
+  (F1 trung bình ≈ 0.84 vs 0.9541).
 - Giá trị `config.PAPER_REFERENCE` trong code (`KNN_F1=0.9541`, `KNN_AUC=0.95`) lấy
   đúng từ Bảng 2 và Hình 2 của bài báo. (Phần Abstract của bài ghi 95.12% — lệch
   nhẹ so với bảng 95.41%; ta dùng số trong bảng.)
@@ -130,4 +166,5 @@ Diễn giải chi tiết ở [tài liệu 07](07-giai-thich-ket-qua-cho-mentor.m
 | F1-Score | **Chỉ số chính** — cân bằng Precision & Recall khi lớp lệch | `sklearn.metrics.f1_score` |
 | AUC | **Chỉ số chính** — so sánh mô hình không phụ thuộc ngưỡng | `sklearn.metrics.roc_auc_score` |
 | CV-Acc | Phát hiện overfit trên tập train | `sklearn.model_selection.cross_val_predict` |
-| LOSO Split | Đảm bảo tổng quát hoá cho người dùng mới, chống data leakage | `config.TRAIN_SUBJECTS / TEST_SUBJECT` |
+| LOSO Split (single) | Đảm bảo tổng quát hoá cho người dùng mới, chống data leakage | `config.TRAIN_SUBJECTS / TEST_SUBJECT` |
+| LOSO đầy đủ (10 fold) | Trung bình ± SD và pooled qua mọi subject — chống kết luận sai từ 1 fold thuận lợi | `src/loso.py`, `scripts/run_loso.py` |

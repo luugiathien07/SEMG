@@ -33,8 +33,13 @@ Dự án tham chiếu hai bài báo cùng nhóm tác giả (dùng chung bộ d�
 | Kết quả chính | Acc 82.81%, F1 0.807 | KNN: F1 0.9541, AUC 0.95 |
 
 Code MATLAB được convert **triển khai theo bài BME 2024** (14 đặc trưng + mRMR +
-nhiều mô hình), nên demo cũng theo hướng này. Lưu ý code MATLAB có **thêm một mô
-hình** (Decision Tree) so với 3 mô hình trong bài báo — xem mục 1.4.
+nhiều mô hình), nên demo cũng theo hướng này. Pipeline đang chạy (`src/loso.py`,
+dùng chung cho cả `python -m src.pipeline` và Streamlit) giữ **4 mô hình
+paper-faithful**: KNN(1-NN), KNN(5-NN), SVM (kernel tuyến tính), LDA — tất cả
+dùng **cả 14 đặc trưng**, chuẩn hoá StandardScaler, không SMOTE, không tinh
+chỉnh ngưỡng. Có một bộ mô hình khác (`src/models.py` + `src/evaluate.py`: SVM
+top-3 mRMR, KNN/LDA/DecisionTree + SMOTE + GridSearchCV tinh chỉnh ngưỡng)
+**không còn được `app.py` gọi tới** — xem mục 1.4.
 
 ## 1.4. Bản đồ: file MATLAB → module Python
 
@@ -43,14 +48,19 @@ hình** (Decision Tree) so với 3 mô hình trong bài báo — xem mục 1.4.
 | Code MATLAB gốc | Module Python | Vai trò |
 |---|---|---|
 | `Feature_Extraction.m`, `Import.m` | `feature_extraction.py`, `data_loader.py` | Đọc CSV, loại kênh lỗi, tính 14 đặc trưng/kênh |
-| `Feature_Selection.m` | `feature_selection.py` | mRMR (`fscmrmr` → MRMR-FCQ) |
-| `SVMClassification.m` | `models.py` (SVM) | SVM kernel tuyến tính, top-3 đặc trưng |
-| `KNNClassification.m` | `models.py` (KNN) | KNN k=1, 14 đặc trưng |
-| `LDAClassification.m` | `models.py` (LDA) | LDA, 14 đặc trưng |
-| `RFClassification.m` | `models.py` (DecisionTree) | Thực chất là 1 cây quyết định (`fitctree`) |
-| (chỉ số trong các file trên) | `evaluate.py` | Confusion matrix, Accuracy/Precision/Recall/F1, ROC/AUC |
+| `Feature_Selection.m` | `feature_selection.py` | mRMR (`fscmrmr` → MRMR-FCQ), chỉ để **báo cáo top-3**, không lọc đặc trưng đưa vào model |
+| `SVMClassification.m` | `loso.py` (`SVM(linear)`) | SVM kernel tuyến tính, **cả 14 đặc trưng** |
+| `KNNClassification.m` | `loso.py` (`KNN(1NN)`, `KNN(5NN)`) | KNN k=1 (đúng bản gốc) + biến thể k=5, 14 đặc trưng |
+| `LDAClassification.m` | `loso.py` (`LDA`) | LDA, 14 đặc trưng |
+| `RFClassification.m` | *(không dùng trong pipeline hiện tại)* | Bản Decision Tree (`fitctree`) từng có ở `models.py`, đã ngừng gọi từ `app.py` |
+| (chỉ số trong các file trên) | `loso.py` / `pipeline.py` | Confusion matrix, Accuracy/Precision/Recall/F1, ROC/AUC |
 
-→ Demo giữ **4 mô hình đúng như code MATLAB** (SVM, KNN, LDA, Decision Tree).
+→ Pipeline đang chạy (CLI + Streamlit) giữ **4 mô hình**: KNN(1-NN), KNN(5-NN),
+SVM(linear), LDA — tất cả dùng **cả 14 đặc trưng**, không SMOTE, không tinh
+chỉnh ngưỡng (`src/loso.py::build_loso_models`). Bộ mô hình cũ hơn có SMOTE +
+Decision Tree/RandomForest/LogisticRegression + GridSearchCV (`src/models.py`,
+`src/evaluate.py`) vẫn còn trong code nhưng **không được `app.py` gọi tới nữa**
+— chỉ dùng trong test (`tests/test_evaluate.py`).
 
 ## 1.5. Pipeline tổng thể
 
@@ -64,14 +74,17 @@ Dữ liệu thô CSV (64 kênh, 2000 Hz)
 [2] Trích 14 đặc trưng     →  feature_extraction.py
         │  (8 miền thời gian + 6 miền tần số cho mỗi kênh)
         ▼
-[3] Chọn đặc trưng mRMR    →  feature_selection.py
-        │  (xếp hạng, lấy top-3, chỉ fit trên tập train)
+[3] Xếp hạng mRMR (báo cáo) →  feature_selection.py
+        │  (chỉ fit trên tập train; top-3 hiển thị ở tab Feature Selection,
+        │   không lọc bớt đặc trưng đưa vào model)
         ▼
-[4] Huấn luyện & phân loại →  models.py
-        │  (SVM / KNN / LDA / Decision Tree — 4 file classifier MATLAB)
+[4] Huấn luyện & phân loại →  loso.py (build_loso_models)
+        │  (KNN 1-NN / KNN 5-NN / SVM linear / LDA — cả 14 đặc trưng,
+        │   chuẩn hoá, không SMOTE, không tinh chỉnh ngưỡng)
         ▼
-[5] Đánh giá               →  evaluate.py
-        │  (leave-one-subject-out, chỉ số từ confusion matrix, ROC/AUC)
+[5] Đánh giá               →  pipeline.py
+        │  (leave-one-subject-out: train {5,7,8,9,10,11,12,13,14}, test 6;
+        │   chỉ số từ confusion matrix, ROC/AUC)
         ▼
 Bảng kết quả + biểu đồ     →  pipeline.py (CLI) & app.py (Streamlit)
 ```
@@ -88,11 +101,11 @@ Bảng kết quả + biểu đồ     →  pipeline.py (CLI) & app.py (Streamlit
 | `src/config.py` | Cấu hình: đường dẫn, `Fs=2000`, danh sách 14 đặc trưng, subject train/test, số fold. |
 | `src/data_loader.py` | Đọc CSV, phân tích tên file → (subject, điều kiện, nhãn), mask loại kênh lỗi. |
 | `src/feature_extraction.py` | 14 đặc trưng cho một kênh; PSD, MDF, MNF, spectral entropy. |
-| `src/feature_selection.py` | mRMR (MRMR-FCQ): xếp hạng đặc trưng. |
-| `src/models.py` | 4 mô hình với siêu tham số đúng như code MATLAB. |
-| `src/evaluate.py` | Confusion matrix, các chỉ số, cross-validation, ROC/AUC. |
-| `src/pipeline.py` | Điều phối, cache đặc trưng, in báo cáo. |
-| `app.py` | Ứng dụng Streamlit 5 tab. |
+| `src/feature_selection.py` | mRMR (MRMR-FCQ): xếp hạng đặc trưng (chỉ để báo cáo top-3). |
+| `src/loso.py` | Bảng đặc trưng đầy đủ (10 subject), 4 mô hình paper-faithful (KNN 1NN/5NN, SVM linear, LDA), leave-one-subject-out qua từng subject. Dùng chung bởi CLI, Streamlit và `scripts/run_loso.py`. |
+| `src/pipeline.py` | Điều phối split train/test cố định (`config.TRAIN_SUBJECTS`/`TEST_SUBJECT`), cache đặc trưng, in báo cáo. |
+| `src/models.py`, `src/evaluate.py` | Bộ mô hình cũ hơn (SMOTE, Decision Tree/RandomForest/LogisticRegression, GridSearchCV) — không còn được `app.py` gọi, chỉ dùng trong test. |
+| `app.py` | Ứng dụng Streamlit **6 tab** (thêm tab Predict/Inference so với bản đầu). |
 
 ## 1.7. Cách chạy nhanh
 

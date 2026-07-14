@@ -19,63 +19,84 @@ quan). Cài đặt ở `src/feature_selection.py`. Nguyên tắc chọn tham lam
   đặc trưng đã chọn trước đó. Càng cao → càng trùng lặp thông tin.
 - Mỗi bước chọn đặc trưng tối đa hoá `relevance − redundancy`.
 
-Kết quả là một **thứ hạng đầy đủ** 14 đặc trưng (tốt → kém), ta lấy **top-3** đầu.
+Kết quả là một **thứ hạng đầy đủ** 14 đặc trưng (tốt → kém), lấy ra **top-3** để
+báo cáo (tab Feature Selection) — nhưng lưu ý (mục 4.3): trong pipeline hiện tại
+top-3 này **chỉ mang tính minh hoạ/báo cáo**, không còn được dùng để giới hạn
+đặc trưng của bất kỳ model nào (mọi model đều train trên cả 14 đặc trưng).
 
 > Quan trọng: mRMR chỉ được tính trên **tập train** để tránh rò rỉ thông tin từ
 > tập test.
 
-### Kết quả xếp hạng trong demo hiện tại
+### Kết quả xếp hạng trong demo hiện tại (dataset 10 subject, cập nhật 2026-07-14)
 
-Thứ hạng mRMR (từ tốt nhất):
+Thứ hạng mRMR (từ tốt nhất, tính trên tập train = subject {5,7,8,9,10,11,12,13,14}):
 
-`Spectral_Entropy → Spectral_STD → Max → Kurtosis → Mean → RMS → Spectral_Max →
-Skewness → Spectral_Min → STD → MDF → MAV → MNF → Min`
+`MAV → Spectral_Max → Kurtosis → Mean → Min → STD → MDF → Spectral_Min →
+Spectral_STD → RMS → Skewness → Max → MNF → Spectral_Entropy`
 
-→ **Top-3 được chọn: Spectral_Entropy, Spectral_STD, Max.**
+→ **Top-3 được chọn: MAV, Spectral_Max, Kurtosis.**
+
+> Con số này thay đổi so với lần chạy trước (`Spectral_Entropy, Spectral_STD,
+> Max`) vì dataset đã tăng từ 5 lên **10 đối tượng** (xem
+> [tài liệu 02](02-du-lieu-va-nhan.md)) và tập train hiện là subject
+> {5,7,8,9,10,11,12,13,14} (test = subject 6) thay vì {5,7,8,11} (test = subject 9).
 
 **Đối chiếu với bài báo:** BME 2024 báo cáo top-3 mRMR là **MAV, Skewness, Mean**
 (*"the MAV, Skewness, and Mean features were appropriate for classifying muscle
-fatigue"*). Top-3 của demo khác vì (1) chỉ dùng **5/10 đối tượng**, (2) tập con
-dữ liệu và cách chia khác, (3) cài đặt mRMR (MRMR-FCQ) khác với `fscmrmr` của MATLAB.
-Đây là điều **bình thường** — mRMR nhạy với dữ liệu; chính bài báo cũng lưu ý rằng
-đặc trưng do mRMR chọn "chỉ mang tính chỉ báo" (indicative). Xem tab **Feature
-Selection** để thấy biểu đồ xếp hạng.
+fatigue"*). Demo hiện đã khớp **1/3 đặc trưng (MAV)** với bài báo — gần hơn so với
+lần chạy 5-subject trước đây (0/3 trùng). Phần khác biệt còn lại (Spectral_Max,
+Kurtosis vs Skewness, Mean) đến từ cài đặt mRMR (MRMR-FCQ tự viết) khác với
+`fscmrmr` của MATLAB, và cách chia train/test khác. Xem tab **Feature Selection**
+để thấy biểu đồ xếp hạng.
 
 > Lưu ý trung thực: bản thân bài báo BME cũng nêu ở phần Hạn chế rằng mRMR *"khi
 > đưa vào mô hình phân loại thì hiệu năng không tối ưu, các đặc trưng này chỉ mang
-> tính chỉ báo"*. Vì vậy KNN/LDA trong bài (và trong demo) vẫn dùng **cả 14 đặc
-> trưng**, chỉ riêng SVM dùng top-3.
+> tính chỉ báo"*. Trong demo hiện tại, **tất cả 4 model (KNN 1NN/5NN, SVM, LDA)
+> đều dùng cả 14 đặc trưng** — top-3 mRMR chỉ hiển thị để minh hoạ, không còn
+> giới hạn đặc trưng của SVM như phiên bản trước.
 
-## 4.3. Bốn mô hình phân loại (theo code MATLAB)
+## 4.3. Bốn mô hình phân loại đang chạy (paper-faithful, `src/loso.py`)
 
-Code MATLAB có **4 file classifier** (`SVMClassification.m`, `KNNClassification.m`,
-`LDAClassification.m`, `RFClassification.m`), nên demo convert đủ **4 mô hình**.
-Định nghĩa ở `src/models.py`, giữ đúng siêu tham số của code MATLAB:
+Pipeline hiện tại (`build_loso_models()` trong `src/loso.py`, dùng chung cho CLI
+`python -m src.pipeline` và Streamlit) giữ **4 mô hình**, tất cả **chuẩn hoá
+StandardScaler + cả 14 đặc trưng**, không SMOTE, không tinh chỉnh ngưỡng
+(ngưỡng quyết định mặc định 0.5):
 
-| Mô hình | File MATLAB | Ý tưởng | Cấu hình chính | Đặc trưng dùng |
+| Mô hình | Gốc MATLAB | Ý tưởng | Cấu hình chính | Đặc trưng dùng |
 |---|---|---|---|---|
-| **SVM** | `SVMClassification.m` | Tìm siêu phẳng tách hai lớp với lề lớn nhất. | Kernel tuyến tính, `C=1`, có **chuẩn hoá** (StandardScaler). | **Top-3** mRMR |
-| **KNN** | `KNNClassification.m` | Gán nhãn theo hàng xóm gần nhất. | `k=1`, khoảng cách Euclidean, có chuẩn hoá. | Cả 14 |
-| **LDA** | `LDAClassification.m` | Tìm hướng chiếu tuyến tính tách hai lớp tốt nhất. | Solver `svd`. | Cả 14 |
-| **Decision Tree** | `RFClassification.m` | Cây quyết định chia dữ liệu theo ngưỡng từng đặc trưng. | Tiêu chí Gini, tối đa 21 lá (≈ 20 lần chia). | Cả 14 |
+| **KNN(1-NN)** | `KNNClassification.m` | Gán nhãn theo hàng xóm gần nhất. | `k=1`, khoảng cách Euclidean — đúng bản gốc MATLAB. | Cả 14 |
+| **KNN(5-NN)** | *(biến thể thêm)* | Như trên nhưng `k=5` — ổn định hơn 1-NN. | `k=5`, Euclidean. | Cả 14 |
+| **SVM(linear)** | `SVMClassification.m` | Tìm siêu phẳng tách hai lớp với lề lớn nhất. | Kernel tuyến tính. | Cả 14 (không còn giới hạn top-3) |
+| **LDA** | `LDAClassification.m` | Tìm hướng chiếu tuyến tính tách hai lớp tốt nhất. | Solver mặc định `sklearn`. | Cả 14 |
 
-> **Vì sao gọi là Decision Tree chứ không phải Random Forest?** File `RFClassification.m`
-> tuy đặt tên "RF" nhưng thực chất chỉ tạo **một cây quyết định đơn** (`fitctree`),
-> không có ensemble/bagging. Nên ở đây đặt đúng tên là Decision Tree.
+> **Về Decision Tree/`RFClassification.m`:** bản Decision Tree (thực chất là
+> `fitctree` — một cây đơn, không phải Random Forest thật) từng có trong
+> `src/models.py`, nhưng **không còn được `app.py` gọi tới** ở pipeline hiện
+> tại — chỉ còn dùng trong `tests/test_evaluate.py`. Bộ `src/models.py` +
+> `src/evaluate.py` (SVM top-3 + SMOTE, KNN/LDA/DecisionTree + SMOTE +
+> GridSearchCV tinh chỉnh ngưỡng) vẫn tồn tại trong code nhưng là phiên bản cũ
+> hơn, tách biệt khỏi luồng chạy chính (`src/loso.py` → `src/pipeline.py`).
 >
-> *Tham khảo:* bài báo BME 2024 chỉ báo cáo 3 mô hình (SVM/LDA/KNN); Decision Tree
-> là phần code MATLAB có thêm ngoài bài báo.
+> *Tham khảo:* bài báo BME 2024 báo cáo 3 mô hình (SVM/LDA/KNN); demo thêm
+> **KNN(5-NN)** làm biến thể ổn định hơn để so sánh với 1-NN gốc.
 
 **Chuẩn hoá (Standardize):** SVM và KNN dựa trên khoảng cách, nên các đặc trưng
 có thang đo rất khác nhau (ví dụ tần số hàng trăm Hz vs biên độ nhỏ) cần được đưa
-về cùng thang bằng StandardScaler (trừ trung bình, chia độ lệch chuẩn). LDA và
-Decision Tree không cần bước này.
+về cùng thang bằng StandardScaler. LDA cũng được chuẩn hoá trong pipeline hiện
+tại (đồng nhất bước tiền xử lý giữa các model).
 
 ## 4.4. Huấn luyện và kiểm thử
 
 - **Cross-validation trên tập train:** dùng **StratifiedKFold** (giữ tỉ lệ lớp),
   mặc định 9 fold, để ước lượng độ ổn định của mô hình khi học (cột *CV-Acc*).
-- **Kiểm thử thật:** huấn luyện trên toàn bộ tập train rồi dự đoán trên **subject
-  9** (đối tượng giữ riêng). Mọi chỉ số báo cáo đều tính trên tập test này.
+- **Kiểm thử thật (pipeline single-split, `config.TEST_SUBJECT`):** huấn luyện
+  trên toàn bộ tập train (`config.TRAIN_SUBJECTS = [5,7,8,9,10,11,12,13,14]`)
+  rồi dự đoán trên **subject 6** (đối tượng giữ riêng, cấu hình hiện tại). Mọi
+  chỉ số báo cáo trong tab Classification đều tính trên tập test này.
+- **Đánh giá vững hơn (LOSO đầy đủ, `scripts/run_loso.py`):** lặp lại phép test
+  trên **cả 10 subject** (mỗi lần giữ 1 subject làm test), rồi báo cáo cả trung
+  bình ± độ lệch chuẩn qua từng fold **và** chỉ số pooled (gộp toàn bộ dự đoán
+  lại tính một lần) — xem `results/loso_results.txt`, `results/new_results.txt`
+  và [tài liệu 05](05-chi-so-danh-gia.md) mục 5.6.
 
 Chi tiết các chỉ số ở [tài liệu 05](05-chi-so-danh-gia.md).

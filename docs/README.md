@@ -22,9 +22,12 @@ Streamlit và cách trình bày kết quả demo với mentor.
 - **Bài toán:** với mỗi kênh tín hiệu điện cơ, phân loại cơ đang **bình thường
   (Normal)** hay **mỏi (Fatigue)**.
 - **Dữ liệu:** sEMG 64 kênh, 2000 Hz; nhãn suy ra từ tên file.
-- **Cách làm:** trích 14 đặc trưng/kênh → chọn top-3 bằng mRMR → phân loại bằng
-  SVM/KNN/LDA/Decision Tree → đánh giá trên một đối tượng giữ riêng (subject 9).
-- **Kết quả:** LDA và SVM tốt nhất (F1 ≈ 0.92–0.93, AUC ≈ 0.98–0.99).
+- **Cách làm:** trích 14 đặc trưng/kênh (mRMR chỉ để xếp hạng/báo cáo top-3) →
+  phân loại bằng KNN(1-NN)/KNN(5-NN)/SVM(linear)/LDA (cả 14 đặc trưng) → đánh giá
+  trên một đối tượng giữ riêng (subject 6), cộng thêm leave-one-subject-out đầy đủ
+  qua cả 10 subject để có số liệu trung bình đáng tin cậy hơn.
+- **Kết quả:** trên subject 6 (fold demo), KNN(1-NN) tốt nhất (F1 ≈ 0.98, AUC ≈
+  0.99); trung bình qua cả 10 fold LOSO, F1 thực tế thấp hơn (≈ 0.81–0.84 ± 0.09–0.11).
 - **Nguồn:** **convert từ code MATLAB gốc** (`code-matlab/`, 7 file `.m`); hai bài
   báo trong `papers/` (ICACE 2019, BME 2024) chỉ mang tính **tham khảo**.
 
