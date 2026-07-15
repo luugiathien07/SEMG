@@ -136,6 +136,27 @@
   .pill.ok{background:var(--green-soft);color:var(--green)}
   .pill.bad{background:var(--rose-soft);color:var(--rose)}
 
+  /* slide 3 — MFCV / abstention gate */
+  .mfcv-layout{display:grid;grid-template-columns:1.35fr 1fr;gap:28px;
+    position:relative;z-index:1;max-width:1180px;align-items:start}
+  @media (max-width:980px){.mfcv-layout{grid-template-columns:1fr}}
+
+  .mfcv-fig{margin:0;background:var(--panel);border:1px solid var(--panel-line);
+    border-radius:12px;padding:14px 16px 16px;display:flex;flex-direction:column;gap:10px}
+  .mfcv-fig img{width:100%;height:auto;border-radius:6px;display:block;
+    background:#fff}
+  .mfcv-fig figcaption{font-size:12.5px;color:var(--ink-soft);line-height:1.55}
+
+  .gate-list{display:flex;flex-direction:column;gap:12px}
+  .gate-item{background:var(--panel);border:1px solid var(--panel-line);
+    border-left:2px solid var(--violet);border-radius:10px;
+    padding:14px 16px;display:grid;grid-template-columns:auto 1fr;
+    column-gap:12px;row-gap:2px}
+  .gate-n{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--violet);
+    align-self:start;padding-top:2px}
+  .gate-t{font-size:14.5px;font-weight:700;color:var(--ink);grid-column:2}
+  .gate-d{font-size:13px;color:var(--ink-soft);line-height:1.5;grid-column:2}
+
   /* nav */
   .nav{position:fixed;right:28px;bottom:28px;display:flex;gap:10px;
     align-items:center;z-index:5;font-family:var(--mono)}
@@ -169,7 +190,7 @@
 
   <section class="slide" id="s1">
     <canvas id="trace"></canvas>
-    <div class="kicker-num">01 / 02</div>
+    <div class="kicker-num">01 / 03</div>
     <div class="eyebrow"><span class="dot"></span>Usecase 1 — Trước khi vào demo</div>
     <h1>Giám sát mỏi cơ thời gian thực trong buổi tập phục hồi chức năng</h1>
     <p class="lede">Kỹ thuật viên vật lý trị liệu gắn cảm biến sEMG 64 điện cực lên cơ đang tập
@@ -199,14 +220,14 @@
   </section>
 
   <section class="slide" id="s2">
-    <div class="kicker-num">02 / 02</div>
+    <div class="kicker-num">02 / 03</div>
     <div class="eyebrow"><span class="dot"></span>Thuật ngữ xuất hiện trong demo</div>
     <h1>Đọc hiểu các chỉ số trên màn hình demo</h1>
     <p class="lede">Mỗi thuật ngữ dưới đây gắn với đúng con số / vùng bạn sẽ thấy khi buổi tập
       chạy — màu <span class="badge time">miền thời gian</span>,
       <span class="badge freq">miền tần số</span> và
       <span class="badge cv">tốc độ dẫn truyền</span> khớp với 3 đường trong biểu đồ
-      "Xu hướng RMS, MDF &amp; CV" của demo.</p>
+      "Xu hướng RMS, MDF &amp; MFCV" của demo.</p>
 
     <div class="glossary">
       <div class="term dom-time">
@@ -222,11 +243,12 @@
           kinh–cơ chậm lại → tần số trung vị giảm dần.</div>
       </div>
       <div class="term dom-cv">
-        <div class="name ascii">CV <span class="badge cv">tốc độ dẫn truyền</span></div>
-        <div class="full">Conduction Velocity (m/s)</div>
+        <div class="name ascii">MFCV <span class="badge cv">tốc độ dẫn truyền</span></div>
+        <div class="full">Muscle Fiber Conduction Velocity (m/s)</div>
         <div class="expl">"Tín hiệu điện lan dọc sợi cơ nhanh hay chậm." Khi mỏi, tốc độ dẫn
-          truyền giảm dần — ước tính từ tần số trung bình phổ tín hiệu, quy đổi về dải sinh lý
-          của cơ nhị đầu tay (~2.5–5 m/s).</div>
+          truyền giảm dần — ước lượng bằng trễ thời gian đo được giữa các điện cực liền kề.
+          Đoạn đứt trên đường MFCV không phải lỗi: đó là <strong>cổng abstention</strong> (chi
+          tiết ở slide sau) từ chối kết luận khi tín hiệu không đủ tin cậy.</div>
       </div>
       <div class="term dom-time">
         <div class="name ascii">%MVC</div>
@@ -247,11 +269,51 @@
         <div class="expl">Kết quả của model học máy, tổng hợp từ 14 đặc trưng tín hiệu — không
           phải chỉ đọc riêng RMS hay MDF.</div>
       </div>
-      <div class="term dom-state">
-        <div class="name ascii">F1-score</div>
-        <div class="full">Độ chính xác trên người chưa từng thấy</div>
-        <div class="expl">Đo trên 1 bệnh nhân giữ riêng, không dùng để huấn luyện — phản ánh khả
-          năng dùng được cho người mới.</div>
+    </div>
+  </section>
+
+  <section class="slide" id="s3">
+    <div class="kicker-num">03 / 03</div>
+    <div class="eyebrow"><span class="dot"></span>Điểm khác biệt an toàn</div>
+    <h1>MFCV &amp; cổng abstention: biết khi nào nên im lặng</h1>
+    <p class="lede">Đường <span class="badge cv">MFCV</span> trong biểu đồ xu hướng không phải lúc nào cũng có
+      giá trị — khi tín hiệu không đủ tin cậy để ước lượng tốc độ dẫn truyền, hệ thống
+      <strong>để trống đoạn đó</strong> thay vì đoán một con số sai. Đó là hành vi có chủ đích,
+      không phải lỗi hiển thị.</p>
+
+    <div class="mfcv-layout">
+      <figure class="mfcv-fig">
+        <img src="../docs/MFCV.png" alt="Biểu đồ RMS tăng dần và MFCV giảm dần trong một buổi tập, với các cửa sổ bị cổng abstention từ chối được đánh dấu xám">
+        <figcaption>Dữ liệu thật, Sujet 10 — 70% MVC đến mỏi. RMS tăng dần, MFCV giảm dần — đúng
+          chu kỳ sinh lý của mỏi cơ. 18/160 cửa sổ (vạch xám) bị cổng abstention từ chối, chủ yếu
+          lúc cơ chưa co hoặc đã buông lực.</figcaption>
+      </figure>
+
+      <div class="gate-list">
+        <div class="gate-item">
+          <div class="gate-n">01</div>
+          <div class="gate-t">Tương quan liên kênh</div>
+          <div class="gate-d">Hệ số tương quan giữa 2 kênh vi sai kép liền kề phải &gt; 0.75 — tín hiệu
+            lan truyền phải đủ rõ mới tin vào ước lượng trễ.</div>
+        </div>
+        <div class="gate-item">
+          <div class="gate-n">02</div>
+          <div class="gate-t">MFCV trong dải sinh lý</div>
+          <div class="gate-d">Chỉ chấp nhận 2–10 m/s — ngoài dải này gần như chắc chắn là nhiễu, không
+            phải tín hiệu dẫn truyền thật.</div>
+        </div>
+        <div class="gate-item">
+          <div class="gate-n">03</div>
+          <div class="gate-t">Cơ đang thực sự co</div>
+          <div class="gate-d">RMS cửa sổ phải &gt; 3× nền lúc nghỉ — tránh tính MFCV khi cơ chưa gồng hoặc
+            đã buông lực, lúc đó mọi ước lượng đều là nhiễu.</div>
+        </div>
+        <div class="gate-item">
+          <div class="gate-n">04</div>
+          <div class="gate-t">Tránh vùng innervation zone</div>
+          <div class="gate-d">Tại điểm dây thần kinh cấp tín hiệu, điện thế lan hai chiều khiến trễ đổi
+            dấu — bộ 4 điện cực dính vùng này bị loại riêng, không kéo tụt cả cột.</div>
+        </div>
       </div>
     </div>
   </section>
