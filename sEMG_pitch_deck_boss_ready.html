@@ -1,0 +1,1032 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="color-scheme" content="light dark" />
+<title>sEMG/MFCV Clinical Intelligence — Pitch Deck</title>
+<style>
+  :root{
+    --teal:#00A896;
+    --teal-dark:#028090;
+    --mint:#9BE7DC;
+    --slate:#1E293B;
+    --slate-2:#334155;
+    --muted:#64748B;
+    --card:#F2F7F8;
+    --navy:#0B2A4A;
+    --navy-2:#071D34;
+    --amber:#E08A1E;
+    --white:#FFFFFF;
+    --line:#DCE8EB;
+    --green:#168B6A;
+    --red:#C2413D;
+    --yellow:#C98A11;
+    --shadow:0 18px 55px rgba(3,20,35,.18);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#07111f;font-family:Arial,Helvetica,sans-serif;color:var(--slate)}
+  button,select{font-family:inherit}
+  #viewport{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:
+    radial-gradient(circle at 8% 10%,rgba(0,168,150,.14),transparent 28%),
+    radial-gradient(circle at 92% 88%,rgba(2,128,144,.14),transparent 30%),
+    #07111f;}
+  #stage{position:relative;width:1600px;height:900px;transform-origin:center center;box-shadow:var(--shadow);background:white;overflow:hidden}
+  .slide{position:absolute;inset:0;display:none;background:#fff;overflow:hidden}
+  .slide.active{display:block;animation:slideIn .26s ease-out}
+  @keyframes slideIn{from{opacity:.2;transform:translateX(16px)}to{opacity:1;transform:none}}
+  .slide.dark{background:
+    radial-gradient(circle at 80% 18%,rgba(0,168,150,.22),transparent 26%),
+    radial-gradient(circle at 15% 90%,rgba(155,231,220,.08),transparent 30%),
+    linear-gradient(138deg,#071D34 0%,#0B2A4A 62%,#084D58 100%);color:white}
+  .content{padding:48px 64px 62px;height:100%;position:relative}
+  .dark .content{padding:70px 86px}
+  .header{display:flex;align-items:flex-start;gap:18px;margin-bottom:26px}
+  .icon-bubble{width:66px;height:66px;border-radius:20px;background:linear-gradient(135deg,rgba(0,168,150,.16),rgba(155,231,220,.34));border:1px solid rgba(0,168,150,.24);display:flex;align-items:center;justify-content:center;flex:0 0 auto}
+  .icon-bubble svg{width:31px;height:31px;stroke:var(--teal-dark);fill:none;stroke-width:2.1;stroke-linecap:round;stroke-linejoin:round}
+  .kicker{font-size:18px;font-weight:700;letter-spacing:.09em;color:var(--teal);text-transform:uppercase;margin:1px 0 8px}
+  .slide-title{font-size:36px;line-height:1.13;font-weight:700;color:var(--slate);margin:0;max-width:1320px}
+  .slide-subtitle{font-size:20px;line-height:1.45;color:var(--muted);margin:12px 0 0;max-width:1250px}
+  .dark .kicker{color:var(--mint)}
+  .dark .slide-title{color:#fff}
+  .dark .slide-subtitle{color:#D1E5E8}
+  .footer{position:absolute;left:64px;right:64px;bottom:26px;display:flex;justify-content:space-between;align-items:center;color:var(--muted);font-size:14px;letter-spacing:.02em}
+  .footer:before{content:"";position:absolute;left:0;right:0;top:-14px;height:1px;background:var(--line)}
+  .dark .footer{color:#9CB6C0}
+  .dark .footer:before{background:rgba(255,255,255,.12)}
+  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+  .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
+  .grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:24px 26px;position:relative}
+  .card.white{background:white}
+  .card.dark-card{background:var(--navy);border-color:var(--navy);color:white}
+  .card h3{font-size:22px;margin:0 0 10px;color:var(--slate)}
+  .card.dark-card h3{color:white}
+  .card p{font-size:18px;line-height:1.48;margin:0;color:var(--slate-2)}
+  .card.dark-card p{color:#D5E7EA}
+  .card .mini{font-size:15px;color:var(--muted);line-height:1.45}
+  .card.dark-card .mini{color:#AFC7CF}
+  .pill{display:inline-flex;align-items:center;gap:8px;border-radius:999px;padding:7px 12px;font-size:14px;font-weight:700;letter-spacing:.02em}
+  .pill.teal{background:var(--teal-dark);color:white}
+  .pill.mint{background:#D8F5F0;color:#096B64}
+  .pill.navy{background:var(--navy);color:white}
+  .pill.gray{background:#E8EFF1;color:#475569}
+  .pill.amber{background:#FFF0D4;color:#9A5700}
+  .pill.red{background:#FCE3E1;color:#9F2F2B}
+  .pill.green{background:#DDF4EB;color:#0E7659}
+  .label-fact,.label-research,.label-pilot{display:inline-flex;padding:6px 10px;border-radius:8px;font-size:13px;font-weight:700;letter-spacing:.04em;text-transform:uppercase}
+  .label-fact{background:#DDF4EB;color:#0E7659}
+  .label-research{background:#DDF0F4;color:#12677A}
+  .label-pilot{background:#FFF0D4;color:#9A5700}
+  .callout{background:var(--navy);border-radius:20px;color:white;padding:24px 30px;font-size:23px;line-height:1.4;font-weight:700}
+  .callout .accent{color:var(--mint)}
+  .quote{position:relative;padding:12px 0 12px 30px;font-size:27px;line-height:1.35;font-weight:700;color:var(--slate)}
+  .quote:before{content:"“";position:absolute;left:0;top:-8px;font-size:64px;color:var(--teal);font-weight:700}
+  .small-note{font-size:14px;line-height:1.45;color:var(--muted)}
+  .source-note{position:absolute;left:64px;right:64px;bottom:54px;font-size:12.5px;color:#71828A;line-height:1.35}
+  .dark .source-note{color:#9CB6C0}
+  .stat{background:var(--navy);border-radius:18px;padding:20px;color:white;text-align:left}
+  .stat strong{display:block;font-size:36px;color:var(--mint);margin-bottom:5px}
+  .stat span{font-size:14px;color:#D1E5E8;line-height:1.35}
+  .table-wrap{border:1px solid var(--line);border-radius:18px;overflow:hidden;background:white}
+  table{width:100%;border-collapse:collapse;font-size:17px;line-height:1.35}
+  thead th{background:var(--teal-dark);color:white;text-align:left;padding:15px 18px;font-size:14px;letter-spacing:.04em;text-transform:uppercase}
+  tbody td{padding:15px 18px;border-top:1px solid var(--line);vertical-align:top}
+  tbody tr:nth-child(even){background:var(--card)}
+  tbody td:first-child{font-weight:700;color:var(--slate)}
+  .check-list{list-style:none;padding:0;margin:0;display:grid;gap:12px}
+  .check-list li{position:relative;padding-left:30px;font-size:18px;line-height:1.42;color:var(--slate-2)}
+  .check-list li:before{content:"✓";position:absolute;left:0;top:0;color:var(--teal-dark);font-weight:700}
+  .x-list{list-style:none;padding:0;margin:0;display:grid;gap:12px}
+  .x-list li{position:relative;padding-left:30px;font-size:18px;line-height:1.42;color:var(--slate-2)}
+  .x-list li:before{content:"×";position:absolute;left:1px;top:-2px;color:var(--red);font-weight:700;font-size:24px}
+  .big-number{font-size:48px;font-weight:700;color:var(--teal-dark);line-height:1}
+  .divider{height:1px;background:var(--line);margin:18px 0}
+  .accent-text{color:var(--teal-dark);font-weight:700}
+  .amber-text{color:#A65D00;font-weight:700}
+  .muted{color:var(--muted)}
+  .visual-row{display:flex;align-items:stretch;gap:22px}
+  .visual-row > *{flex:1}
+  .arrow-box{display:flex;align-items:center;justify-content:center;color:var(--teal-dark);font-size:34px;flex:0 0 48px}
+  .dark-strip{background:var(--navy);border-radius:22px;padding:20px 26px;color:white}
+  .dark-strip strong{color:var(--mint)}
+  .two-evidence{display:grid;grid-template-columns:1fr 1fr;gap:26px}
+  .evidence-card{border-radius:22px;padding:24px 26px;border:1px solid var(--line);background:var(--card)}
+  .evidence-card h3{font-size:23px;margin:0 0 16px}
+  .evidence-card ul{margin:0;padding-left:22px;display:grid;gap:13px;font-size:17px;line-height:1.42;color:var(--slate-2)}
+  .evidence-card.fact h3{color:var(--teal-dark)}
+  .evidence-card.pilot h3{color:#8A5C00}
+  .comparison-stack{display:grid;grid-template-columns:1.1fr .9fr 1.2fr;gap:20px;align-items:stretch}
+  .stack-card{border:1px solid var(--line);border-radius:22px;padding:22px 24px;background:var(--card)}
+  .stack-card h3{font-size:21px;margin:0 0 12px}
+  .stack-card p{font-size:17px;line-height:1.45;margin:0;color:var(--slate-2)}
+  .stack-card.highlight{background:linear-gradient(135deg,#0B2A4A,#0C4E59);border-color:transparent;color:white}
+  .stack-card.highlight h3{color:var(--mint)}
+  .stack-card.highlight p{color:#E1EFF1}
+  .flow-steps{display:grid;grid-template-columns:repeat(7,1fr);gap:10px;margin-top:20px}
+  .flow-step{border-radius:16px;border:1px solid var(--line);background:var(--card);padding:16px 12px;text-align:center;min-height:150px;position:relative}
+  .flow-step .num{width:34px;height:34px;border-radius:50%;background:#D9EFEC;color:var(--teal-dark);display:flex;align-items:center;justify-content:center;font-weight:700;margin:0 auto 10px}
+  .flow-step h4{font-size:15px;line-height:1.25;margin:0 0 6px;color:var(--slate)}
+  .flow-step p{font-size:12.5px;line-height:1.35;margin:0;color:var(--muted)}
+  .flow-step.focus{border:3px solid var(--teal);background:#EAF8F5;transform:translateY(-7px);box-shadow:0 10px 26px rgba(0,168,150,.18)}
+  .flow-step.focus .num{background:var(--teal-dark);color:white}
+  .decision-tree{display:grid;grid-template-columns:1fr 82px 1.2fr;gap:18px;align-items:center}
+  .decision-node{border:1px solid var(--line);background:var(--card);border-radius:22px;padding:24px}
+  .decision-node h3{font-size:22px;margin:0 0 10px}
+  .decision-node p{font-size:17px;line-height:1.43;color:var(--slate-2);margin:0}
+  .decision-branches{display:grid;gap:14px}
+  .branch{border-radius:18px;padding:18px 20px;border:1px solid var(--line);background:white}
+  .branch.plan-a{border-left:8px solid var(--teal)}
+  .branch.plan-b{border-left:8px solid var(--amber)}
+  .branch.plan-c{border-left:8px solid var(--red)}
+  .branch h4{font-size:18px;margin:0 0 7px}
+  .branch p{font-size:15px;line-height:1.4;color:var(--muted);margin:0}
+  .evidence-ladder{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;align-items:stretch}
+  .ladder-step{border-radius:22px;padding:24px 24px 22px;border:1px solid var(--line);position:relative;overflow:hidden}
+  .ladder-step:before{content:"";position:absolute;left:0;right:0;top:0;height:8px}
+  .ladder-step.one{background:#EAF8F5}.ladder-step.one:before{background:var(--green)}
+  .ladder-step.two{background:#EAF5F8}.ladder-step.two:before{background:var(--teal-dark)}
+  .ladder-step.three{background:#FFF7E8}.ladder-step.three:before{background:var(--amber)}
+  .ladder-step .step-no{font-size:46px;font-weight:700;color:rgba(11,42,74,.16);line-height:1;margin-bottom:4px}
+  .ladder-step h3{font-size:22px;margin:0 0 12px}
+  .ladder-step p{font-size:17px;line-height:1.42;color:var(--slate-2);margin:0}
+  .timeline{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;position:relative}
+  .gate{position:relative;z-index:1;border:1px solid var(--line);background:white;border-radius:22px;padding:17px 20px 18px}
+  .gate .gate-dot{width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 10px;background:var(--navy);color:var(--mint);font-size:18px;font-weight:700;border:5px solid white;box-shadow:0 0 0 2px var(--line)}
+  .gate h3{font-size:19px;text-align:center;margin:0 0 7px}
+  .gate .duration{text-align:center;color:var(--teal-dark);font-size:14px;font-weight:700;margin-bottom:10px}
+  .gate ul{margin:0;padding-left:18px;display:grid;gap:5px;font-size:13.5px;line-height:1.3;color:var(--slate-2)}
+  .cta-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:38px;align-items:stretch;margin-top:34px}
+  .cta-card{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);border-radius:24px;padding:28px 30px}
+  .cta-card h3{font-size:24px;color:white;margin:0 0 16px}
+  .cta-card ol,.cta-card ul{margin:0;padding-left:24px;display:grid;gap:13px;color:#DCECEF;font-size:18px;line-height:1.45}
+  .amber-box{background:var(--amber);color:white;border-radius:24px;padding:28px 30px;display:flex;flex-direction:column;justify-content:center}
+  .amber-box .eyebrow{font-size:15px;text-transform:uppercase;letter-spacing:.08em;font-weight:700;opacity:.9;margin-bottom:10px}
+  .amber-box h3{font-size:31px;line-height:1.2;margin:0 0 14px}
+  .amber-box p{font-size:18px;line-height:1.45;margin:0;color:#FFF8EC}
+  .reference-cols{display:grid;grid-template-columns:1.05fr .95fr;gap:30px}
+  .ref-card{border:1px solid var(--line);background:var(--card);border-radius:22px;padding:24px 26px}
+  .ref-card h3{font-size:21px;color:var(--teal-dark);margin:0 0 16px}
+  .ref-list{margin:0;padding-left:22px;display:grid;gap:12px;font-size:15.5px;line-height:1.4;color:var(--slate-2)}
+  .ref-list a{color:var(--teal-dark);text-decoration:none}
+  .ref-list a:hover{text-decoration:underline}
+  .demo-shell{border-radius:24px;background:linear-gradient(145deg,#091426,#111F36);padding:20px;color:#E7EEF5;box-shadow:0 18px 40px rgba(2,12,25,.24);border:1px solid #273A54}
+  .demo-toolbar{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:14px}
+  .demo-title{font-size:17px;font-weight:700;color:#CFE8EB}
+  .demo-buttons{display:flex;gap:10px;flex-wrap:wrap}
+  .demo-btn{border:none;border-radius:10px;padding:9px 14px;font-size:13px;font-weight:700;cursor:pointer;color:#082230;background:linear-gradient(135deg,var(--mint),#61D5C6)}
+  .demo-btn.secondary{background:#233650;color:#D9E8F0;border:1px solid #344A66}
+  .demo-btn.danger{background:#6A2731;color:white}
+  .demo-grid{display:grid;grid-template-columns:1.45fr .9fr;gap:15px}
+  .demo-panel{background:#101D31;border:1px solid #263A55;border-radius:16px;padding:14px}
+  .demo-panel h4{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:#91A9C0;margin:0 0 10px}
+  canvas{display:block;width:100%;height:100%}
+  .canvas-wrap{height:235px;border-radius:12px;background:#0A1424;overflow:hidden}
+  .metrics{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+  .metric{background:#0A1424;border:1px solid #263A55;border-radius:12px;padding:11px 12px}
+  .metric .value{font-size:22px;font-weight:700;color:white}
+  .metric .label{font-size:11px;color:#8EA5BB;margin-top:3px}
+  .quality-box{border-radius:12px;padding:12px 14px;font-size:14px;font-weight:700;text-align:center;margin-top:9px}
+  .quality-pass{background:#123E35;color:#8AF0D0;border:1px solid #1E6658}
+  .quality-fail{background:#51242A;color:#FFB3B3;border:1px solid #77333B}
+  .quality-warn{background:#4E3D1D;color:#FFD28C;border:1px solid #6C5425}
+  .reason-box{font-size:12px;line-height:1.4;color:#AFC2D5;margin-top:10px;background:#0A1424;border-radius:10px;padding:10px 12px}
+  .trend-grid{display:grid;grid-template-columns:1.35fr .85fr;gap:15px}
+  .trend-summary{display:grid;gap:10px}
+  .trend-item{border:1px solid #263A55;background:#0A1424;border-radius:12px;padding:11px 12px}
+  .trend-item strong{display:block;font-size:19px;color:#E9F4F5;margin-bottom:4px}
+  .trend-item span{font-size:11.5px;color:#8EA5BB;line-height:1.35}
+  .d1-preview-tag{display:inline-flex;align-items:center;gap:8px;background:rgba(0,168,150,.1);border:1px solid rgba(0,168,150,.3);color:#9BE7DC;font-size:13px;font-weight:600;padding:6px 14px;border-radius:20px;margin-bottom:10px}
+  .d1-select{font-family:inherit;font-size:12.5px;border-radius:9px;border:1px solid #273A54;background:#0D1B2E;color:#D9E8F0;padding:7px 11px;cursor:pointer;outline:none}
+  .d1-select:focus{border-color:var(--teal)}
+  .d1-grid{display:grid;grid-template-columns:1.55fr 1fr;gap:14px}
+  .d1-chart-wrap{border-radius:10px;background:#0A1424;overflow:hidden}
+  .d1-chart-wrap canvas{display:block;width:100%;height:100%}
+  .d1-metrics{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:6px}
+  .d1-gauge-wrap{display:flex;flex-direction:column;align-items:center;margin:2px 0 0}
+  .d1-gauge-score{font-size:26px;font-weight:800;margin-top:-46px;color:#fff}
+  .d1-gauge-caption{font-size:10.5px;color:#8EA5BB;margin-top:2px}
+  .d1-status{display:flex;align-items:center;justify-content:center;gap:8px;padding:7px 12px;border-radius:10px;font-weight:700;font-size:12.5px;width:100%;margin-top:6px}
+  .d1-status-ok{background:#ecfdf5;color:#16a34a}
+  .d1-status-warn{background:#fffbeb;color:#d97706}
+  .d1-status-danger{background:#fef2f2;color:#dc2626}
+  .d1-alert{border-radius:10px;padding:8px 12px;font-size:12px;font-weight:600;display:none;margin-top:6px;line-height:1.35}
+  .d1-alert.show{display:block}
+  .d1-alert.warn{background:#fffbeb;color:#92400e;border:1px solid #fde68a}
+  .d1-alert.danger{background:#fef2f2;color:#991b1b;border:1px solid #fecaca}
+  .d1-disclaimer{font-size:10.5px;color:#8EA5BB;background:#0A1424;border:1px dashed #273A54;border-radius:8px;padding:7px 10px;margin-top:6px;line-height:1.35}
+  .presenter-label{position:absolute;right:64px;top:42px;font-size:13px;color:var(--muted);padding:6px 10px;border-radius:999px;border:1px solid var(--line);background:rgba(255,255,255,.74)}
+  .dark .presenter-label{color:#C1D5DA;border-color:rgba(255,255,255,.17);background:rgba(255,255,255,.08)}
+  .confidential{position:absolute;right:86px;bottom:58px;font-size:12px;color:#89A9B4;letter-spacing:.06em;text-transform:uppercase}
+  /* Title slide */
+  .hero-wrap{height:100%;display:grid;grid-template-columns:1.12fr .88fr;align-items:center;gap:50px}
+  .hero-kicker{display:inline-flex;align-items:center;gap:10px;color:var(--mint);font-size:17px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:22px}
+  .hero-kicker:before{content:"";width:36px;height:3px;background:var(--teal);border-radius:4px}
+  .hero-title{font-size:58px;line-height:1.08;margin:0 0 22px;color:white;max-width:920px}
+  .hero-title .mint{color:var(--mint)}
+  .hero-sub{font-size:24px;line-height:1.48;color:#CFE1E5;max-width:840px;margin:0}
+  .hero-meta{display:flex;gap:28px;flex-wrap:wrap;margin-top:36px;color:#9FB9C2;font-size:14px}
+  .hero-meta strong{display:block;color:#E9F4F5;margin-bottom:4px}
+  .orbital{height:590px;position:relative;display:flex;align-items:center;justify-content:center}
+  .orbit{position:absolute;border:1px solid rgba(155,231,220,.22);border-radius:50%}
+  .orbit.o1{width:510px;height:510px;animation:spin 24s linear infinite}
+  .orbit.o2{width:390px;height:390px;animation:spinReverse 18s linear infinite}
+  .orbit.o3{width:270px;height:270px}
+  .orbit-dot{position:absolute;width:18px;height:18px;border-radius:50%;background:var(--teal);box-shadow:0 0 24px rgba(0,168,150,.85)}
+  .o1 .orbit-dot{top:40px;left:110px}.o2 .orbit-dot{bottom:34px;right:72px}.o3 .orbit-dot{top:110px;right:-8px;background:var(--mint)}
+  .core{width:200px;height:200px;border-radius:44px;background:linear-gradient(145deg,rgba(155,231,220,.2),rgba(0,168,150,.12));border:1px solid rgba(155,231,220,.34);display:flex;align-items:center;justify-content:center;box-shadow:inset 0 0 40px rgba(155,231,220,.08)}
+  .core svg{width:110px;height:110px;stroke:var(--mint);fill:none;stroke-width:1.7}
+  @keyframes spin{to{transform:rotate(360deg)}}@keyframes spinReverse{to{transform:rotate(-360deg)}}
+  /* Controls */
+  #controls{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:100;display:flex;align-items:center;gap:9px;background:rgba(5,16,30,.86);border:1px solid rgba(255,255,255,.14);border-radius:999px;padding:8px 12px;backdrop-filter:blur(10px);box-shadow:0 10px 30px rgba(0,0,0,.24)}
+  #controls button{border:none;background:transparent;color:#DDE9ED;cursor:pointer;font-size:16px;padding:7px 10px;border-radius:999px}
+  #controls button:hover{background:rgba(255,255,255,.1)}
+  #counter{color:#AFC3CC;font-size:13px;min-width:54px;text-align:center}
+  #progress{position:fixed;left:0;bottom:0;height:4px;background:linear-gradient(90deg,var(--teal),var(--mint));z-index:110;transition:width .25s ease}
+  #help{position:fixed;right:18px;bottom:18px;z-index:100;color:#9BB0B9;font-size:12px;background:rgba(5,16,30,.72);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:8px 10px;backdrop-filter:blur(10px)}
+  #notesPanel{position:fixed;right:18px;top:18px;width:420px;max-height:calc(100vh - 84px);overflow:auto;z-index:200;background:rgba(250,253,253,.97);border:1px solid #CFE0E3;border-radius:18px;padding:18px 20px;box-shadow:0 18px 45px rgba(0,0,0,.24);display:none;color:var(--slate)}
+  #notesPanel.open{display:block}
+  #notesPanel h3{margin:0 0 8px;color:var(--teal-dark)}
+  #notesPanel p{font-size:14px;line-height:1.5;color:var(--slate-2);white-space:pre-line;margin:0}
+  #overview{position:fixed;inset:0;z-index:250;background:rgba(3,11,21,.96);padding:34px;display:none;overflow:auto}
+  #overview.open{display:block}
+  .overview-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;max-width:1500px;margin:auto}
+  .overview-card{border:1px solid rgba(255,255,255,.13);background:#0D1B2C;border-radius:18px;padding:18px;cursor:pointer;color:white;min-height:130px;transition:.2s ease}
+  .overview-card:hover{transform:translateY(-3px);border-color:var(--teal)}
+  .overview-card .no{color:var(--mint);font-weight:700;font-size:14px}
+  .overview-card h4{font-size:18px;line-height:1.3;margin:10px 0 0}
+  @page{size:1600px 900px;margin:0}
+  @media print{
+    html,body{overflow:visible;background:white}
+    #viewport{position:static;display:block;background:white}
+    #stage{width:1600px;height:auto;transform:none!important;box-shadow:none;overflow:visible}
+    .slide{display:block!important;position:relative;width:1600px;height:900px;page-break-after:always;animation:none}
+    #controls,#progress,#help,#notesPanel,#overview{display:none!important}
+  }
+</style>
+</head>
+<body>
+<div id="viewport">
+  <main id="stage" aria-label="Bài thuyết trình sEMG/MFCV">
+
+    <!-- Slide 1 -->
+    <section class="slide dark active" data-title="Từ dữ liệu sEMG đến quyết định phục hồi">
+      <div class="content">
+        <div class="hero-wrap">
+          <div>
+            <div class="hero-kicker">Đề xuất nội bộ · Motion Lab / PHCN / Y học thể thao</div>
+            <h1 class="hero-title">Từ dữ liệu <span class="mint">sEMG</span> đến quyết định phục hồi</h1>
+            <p class="hero-sub">Clinical Intelligence Layer tương thích Noraxon/Motion Lab — kiểm tra chất lượng, trích bằng chứng mỏi cơ, theo dõi dọc và hỗ trợ bác sĩ/KTV review.</p>
+            <div class="hero-meta">
+              <div><strong>Mục tiêu buổi trình bày</strong>Xin phê duyệt technical/data audit nhỏ</div>
+              <div><strong>Ranh giới</strong>Không thay Noraxon · Không tự chẩn đoán</div>
+              <div><strong>Phiên bản</strong>Boss-ready concept deck · 2026</div>
+            </div>
+          </div>
+          <div class="orbital" aria-hidden="true">
+            <div class="orbit o1"><span class="orbit-dot"></span></div>
+            <div class="orbit o2"><span class="orbit-dot"></span></div>
+            <div class="orbit o3"><span class="orbit-dot"></span></div>
+            <div class="core">
+              <svg viewBox="0 0 120 120">
+                <path d="M18 66c12-30 23 30 35 0s23 30 35 0 20 12 24 0"/>
+                <path d="M21 45h18l9-15 15 58 13-43 11 22h13"/>
+                <circle cx="60" cy="60" r="49" opacity=".45"/>
+              </svg>
+            </div>
+          </div>
+        </div>
+        <div class="confidential">Internal discussion · Human-in-the-loop</div>
+      </div>
+    </section>
+
+    <!-- Slide 2 -->
+    <section class="slide" data-title="Khoảng trống lâm sàng">
+      <div class="content">
+        <span class="presenter-label">FACT + PRODUCT GAP</span>
+        <div class="header">
+          <div class="icon-bubble"><svg viewBox="0 0 24 24"><path d="M12 2v20M2 12h20"/><circle cx="12" cy="12" r="8"/></svg></div>
+          <div><div class="kicker">Khoảng trống lâm sàng</div><h2 class="slide-title">Không thiếu dữ liệu — đang thiếu cách chuyển dữ liệu thành quyết định lặp lại</h2></div>
+        </div>
+        <div class="grid-3" style="margin-top:32px">
+          <div class="card"><span class="pill mint">ĐÃ CÓ</span><h3 style="margin-top:15px">Sức cơ & sức bền</h3><p>Compass 600 / David Health tạo chỉ số lực trực tiếp, dễ diễn giải.</p></div>
+          <div class="card"><span class="pill mint">ĐÃ CÓ</span><h3 style="margin-top:15px">Động học & động lực học</h3><p>VICON, force plate và video mô tả chuyển động, tải và chiến lược bù trừ.</p></div>
+          <div class="card"><span class="pill mint">ĐÃ CÓ</span><h3 style="margin-top:15px">Hoạt hóa cơ & fatigue report</h3><p>Noraxon/myoRESEARCH cung cấp EMG, frequency và amplitude analysis.</p></div>
+        </div>
+        <div class="callout" style="margin-top:24px">Khoảng trống cần tấn công: <span class="accent">quality gate + diễn giải theo protocol + so sánh hai bên + theo dõi dọc + human review.</span></div>
+        <div class="quote" style="margin-top:24px">Hôm nay có đủ bằng chứng để tiến tải cho bệnh nhân này chưa?</div>
+        <div class="small-note" style="margin-left:31px">Cảm nhận người bệnh, quan sát KTV và dữ liệu khách quan phải bổ sung cho nhau — không cái nào thay thế hoàn toàn cái nào.</div>
+        <div class="source-note">Nguồn kiểm chứng hạ tầng: trang Motion Lab Vinmec; Noraxon EMG Frequency Fatigue Report.</div>
+        <div class="footer"><span>CHƯƠNG 2 · sEMG — ĐÁNH GIÁ MỎI CƠ</span><span>02</span></div>
+      </div>
+    </section>
+
+    <!-- Slide 3 -->
+    <section class="slide" data-title="Ca minh họa giả định">
+      <div class="content">
+        <span class="presenter-label">GIẢ ĐỊNH — CẦN PILOT</span>
+        <div class="header">
+          <div class="icon-bubble"><svg viewBox="0 0 24 24"><path d="M4 19h16M6 17V9l6-5 6 5v8"/><path d="M9 17v-5h6v5"/></svg></div>
+          <div><div class="kicker">Ca minh họa — giả định</div><h2 class="slide-title">Cùng đạt 85% sức cơ, nhưng khả năng chịu mỏi có thể chưa tương đương</h2></div>
+        </div>
+        <div class="comparison-stack" style="margin-top:34px">
+          <div class="stack-card">
+            <span class="pill gray">BỆNH NHÂN</span>
+            <h3 style="margin-top:15px">“Em thấy khá ổn”</h3>
+            <p>RPE và cảm nhận mỏi là dữ liệu quan trọng, nhưng khó định lượng cơ nào đang giới hạn.</p>
+          </div>
+          <div class="stack-card">
+            <span class="pill gray">MOTION / FORCE</span>
+            <h3 style="margin-top:15px">85% chân lành</h3>
+            <p>Sức cơ và chuyển động đạt ngưỡng kế hoạch, nhưng chưa mô tả đầy đủ sức bền theo thời gian.</p>
+          </div>
+          <div class="stack-card highlight">
+            <span class="pill mint">FATIGUE EVIDENCE</span>
+            <h3 style="margin-top:15px">Bên tổn thương mỏi sớm hơn</h3>
+            <p>MNF/MDF slope dốc hơn, fatigue onset sớm hơn; MFCV chỉ hiển thị khi cấu hình đủ điều kiện.</p>
+          </div>
+        </div>
+        <div class="visual-row" style="margin-top:28px;align-items:center">
+          <div class="card white" style="border-left:7px solid var(--teal)"><h3>Output an toàn</h3><p><strong>KTV/Bác sĩ review suggested</strong> trước khi tiến tải — không phải lệnh giữ/tăng tải tự động.</p></div>
+          <div class="arrow-box">→</div>
+          <div class="card white" style="border-left:7px solid var(--amber)"><h3>Mục tiêu pilot</h3><p>Kiểm chứng liệu evidence này có cải thiện mức độ tự tin, tính nhất quán và khả năng theo dõi phục hồi hay không.</p></div>
+        </div>
+        <div class="dark-strip" style="margin-top:24px"><strong>Ca giả định:</strong> chỉ minh họa hình dạng giá trị; chưa phải dữ liệu bệnh nhân Vinmec.</div>
+        <div class="footer"><span>CHƯƠNG 2 · sEMG — ĐÁNH GIÁ MỎI CƠ</span><span>03</span></div>
+      </div>
+    </section>
+
+    <!-- Slide 4 -->
+    <section class="slide" data-title="Phạm vi và giới hạn">
+      <div class="content">
+        <span class="presenter-label">INTENDED USE</span>
+        <div class="header">
+          <div class="icon-bubble"><svg viewBox="0 0 24 24"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7l8-4z"/><path d="M9 12l2 2 4-5"/></svg></div>
+          <div><div class="kicker">Phạm vi & giới hạn</div><h2 class="slide-title">Đánh giá chức năng/mỏi cơ — không thay thế bác sĩ và không chẩn đoán bệnh thần kinh</h2></div>
+        </div>
+        <div class="grid-2" style="margin-top:38px">
+          <div class="card dark-card">
+            <span class="pill mint">HỆ THỐNG LÀ</span>
+            <h3 style="margin-top:18px">Clinical decision-support</h3>
+            <ul class="check-list" style="margin-top:16px">
+              <li style="color:#E7F1F3">Kiểm tra chất lượng và khả năng phân tích.</li>
+              <li style="color:#E7F1F3">Trích RMS/MAV/MNF/MDF/slope; MFCV nếu eligible.</li>
+              <li style="color:#E7F1F3">Theo dõi dọc, so sánh hai bên và tạo report.</li>
+              <li style="color:#E7F1F3">Đưa evidence cho bác sĩ/KTV review.</li>
+            </ul>
+          </div>
+          <div class="card white">
+            <span class="pill red">HỆ THỐNG KHÔNG LÀ</span>
+            <h3 style="margin-top:18px">Thiết bị/chẩn đoán tự động</h3>
+            <ul class="x-list" style="margin-top:16px">
+              <li>Không thay Noraxon hoặc myoRESEARCH.</li>
+              <li>Không chẩn đoán bệnh lý thần kinh ngoại biên/NCS.</li>
+              <li>Không tự quyết định tăng tải hoặc return-to-play.</li>
+              <li>Không kết luận khi tín hiệu/metadata không đạt.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="callout" style="margin-top:32px">Nguyên tắc: <span class="accent">AI phân tích → KTV/Bác sĩ kiểm tra → bác sĩ quyết định cuối.</span></div>
+        <div class="footer"><span>CHƯƠNG 2 · sEMG — ĐÁNH GIÁ MỎI CƠ</span><span>04</span></div>
+      </div>
+    </section>
+
+    <!-- Slide 5 -->
+    <section class="slide" data-title="Khoa đối tác và người dùng">
+      <div class="content">
+        <span class="presenter-label">WHO USES IT</span>
+        <div class="header">
+          <div class="icon-bubble"><svg viewBox="0 0 24 24"><circle cx="8" cy="8" r="3"/><circle cx="16" cy="8" r="3"/><path d="M3 20c0-4 2-7 5-7s5 3 5 7M11 20c0-4 2-7 5-7s5 3 5 7"/></svg></div>
+          <div><div class="kicker">Khoa đối tác & đối tượng</div><h2 class="slide-title">Motion Lab là nền tảng; PHCN/Y học thể thao là nơi giá trị lâm sàng được kiểm chứng</h2></div>
+        </div>
+        <div class="grid-2" style="margin-top:34px">
+          <div class="card"><span class="pill teal">ĐƠN VỊ CHỦ ĐẠO</span><h3 style="margin-top:16px">Motion Analysis Lab</h3><p>Thu sEMG, VICON, lực và video; kiểm soát thiết bị, protocol, export và chất lượng tín hiệu.</p></div>
+          <div class="card"><span class="pill teal">ĐƠN VỊ TRIỂN KHAI</span><h3 style="margin-top:16px">PHCN / Y học thể thao</h3><p>Xác định use case, đọc ý nghĩa chức năng, review report và quyết định có hành động hay không.</p></div>
+        </div>
+        <div class="dark-strip" style="margin-top:22px"><strong>Người dùng hằng ngày:</strong> KTV vận hành đo và review kỹ thuật; bác sĩ chỉ định, đọc/ký kết quả và ra quyết định lâm sàng.</div>
+        <div class="grid-3" style="margin-top:24px">
+          <div class="card white"><span class="pill gray">BEACHHEAD</span><h3 style="margin-top:14px">Sau tái tạo ACL</h3><p class="mini">Theo dõi sức bền cơ tứ đầu và lệch hai bên qua nhiều buổi.</p></div>
+          <div class="card white"><span class="pill gray">MỞ RỘNG</span><h3 style="margin-top:14px">Return-to-play support</h3><p class="mini">Bằng chứng bổ sung; không tự quyết định đủ điều kiện thi đấu.</p></div>
+          <div class="card white"><span class="pill gray">MỞ RỘNG</span><h3 style="margin-top:14px">Gait / movement phase</h3><p class="mini">Kết hợp EMG với VICON/force để hiểu bù trừ theo pha.</p></div>
+        </div>
+        <div class="footer"><span>CHƯƠNG 2 · sEMG — ĐÁNH GIÁ MỎI CƠ</span><span>05</span></div>
+      </div>
+    </section>
+
+    <!-- Slide 6 -->
+    <section class="slide" data-title="Bối cảnh và khác biệt">
+      <div class="content">
+        <span class="presenter-label">DIFFERENTIATION</span>
+        <div class="header">
+          <div class="icon-bubble"><svg viewBox="0 0 24 24"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z"/></svg></div>
+          <div><div class="kicker">Bối cảnh & khác biệt</div><h2 class="slide-title">Noraxon đo và báo cáo fatigue; lớp đề xuất bổ sung clinical intelligence theo workflow Vinmec</h2></div>
+        </div>
+        <div class="table-wrap" style="margin-top:30px">
+          <table>
+            <thead><tr><th style="width:28%">Tầng hiện có</th><th style="width:32%">Giá trị đã có</th><th>Khoảng trống lớp đề xuất</th></tr></thead>
+            <tbody>
+              <tr><td>Compass / David Health</td><td>Sức mạnh, sức bền, chỉ số lực trực tiếp.</td><td>Liên kết với fatigue evidence trong cùng protocol và theo dõi dọc.</td></tr>
+              <tr><td>VICON + force + video</td><td>Động học, động lực học và chiến lược bù trừ.</td><td>Map fatigue/activation vào phase vận động và use case.</td></tr>
+              <tr><td>Noraxon + myoRESEARCH</td><td>Thu sEMG, xử lý, frequency/amplitude fatigue analysis.</td><td>QC/abstention, local protocol, side-to-side, longitudinal và report tiếng Việt.</td></tr>
+              <tr><td>Clinical Intelligence Layer</td><td>Không thay tầng đo.</td><td><strong>Biến kết quả đo thành evidence có điều kiện để bác sĩ/KTV review.</strong></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="grid-3" style="margin-top:22px">
+          <div class="stat"><strong>16</strong><span>cảm biến Ultium EMG được Vinmec công bố cho Motion Lab</span></div>
+          <div class="stat"><strong>2k/4k</strong><span>Hz là sample-rate Ultium hỗ trợ — nhưng chưa đủ để kết luận MFCV</span></div>
+          <div class="stat"><strong>1 lớp</strong><span>intelligence có thể tận dụng dữ liệu hiện có thay vì xây lại acquisition</span></div>
+        </div>
+        <div class="source-note">Nguồn: Vinmec Motion Lab; Noraxon Ultium EMG và EMG Frequency Fatigue Report.</div>
+        <div class="footer"><span>CHƯƠNG 2 · sEMG — ĐÁNH GIÁ MỎI CƠ</span><span>06</span></div>
+      </div>
+    </section>
+
+    <!-- Slide 7 -->
+    <section class="slide" data-title="Tích hợp phần cứng và Plan B">
+      <div class="content">
+        <span class="presenter-label">TECHNICAL GATE</span>
+        <div class="header">
+          <div class="icon-bubble"><svg viewBox="0 0 24 24"><path d="M5 4h14v5H5zM7 9v11M17 9v11M4 20h16"/><path d="M9 13h6"/></svg></div>
+          <div><div class="kicker">Tích hợp phần cứng + Plan B</div><h2 class="slide-title">MFCV là capability có điều kiện — không phải điểm chết của MVP</h2></div>
+        </div>
+        <div class="decision-tree" style="margin-top:28px">
+          <div class="decision-node">
+            <span class="pill navy">CÂU HỎI AUDIT</span>
+            <h3 style="margin-top:16px">Dữ liệu hiện tại cho phép làm gì?</h3>
+            <p>Raw multi-channel export? Sampling rate? Channel map? Filter? Linear array? Khoảng cách liên điện cực? Hướng đặt?</p>
+          </div>
+          <div class="arrow-box">→</div>
+          <div class="decision-branches">
+            <div class="branch plan-a"><h4>Plan A — Có geometry đủ cho MFCV</h4><p>RMS/MAV/MNF/MDF/slope + CV/MFCV; kiểm tra correlation và eligibility trước khi báo kết quả.</p></div>
+            <div class="branch plan-b"><h4>Plan B — Chưa có linear array/spacing</h4><p>Làm sEMG feature-based MVP: RMS/MAV/MNF/MDF/onset/slope. Vẫn kiểm chứng workflow và longitudinal value.</p></div>
+            <div class="branch plan-c"><h4>Plan C — Không lấy được dữ liệu usable</h4><p>Xử lý access, license hoặc export trước; không cam kết model/pilot khi chưa có dữ liệu thật.</p></div>
+          </div>
+        </div>
+        <div class="callout" style="margin-top:28px">Điểm kỹ thuật cần nhớ: <span class="accent">sampling cao là cần thiết nhưng chưa đủ; geometry điện cực mới quyết định MFCV.</span></div>
+        <div class="small-note" style="margin-top:17px"><strong>Đề xuất:</strong> một buổi audit kỹ thuật với Motion Lab + 3–5 sample export ẩn danh. Mọi chi phí phần cứng hiện chỉ là ước lượng, cần xác nhận.</div>
+        <div class="source-note">Paper after-fatigue dùng 64 điện cực, khoảng cách 8 mm, sampling 2048 Hz và ước lượng delay đa kênh.</div>
+        <div class="footer"><span>CHƯƠNG 2 · sEMG — ĐÁNH GIÁ MỎI CƠ</span><span>07</span></div>
+      </div>
+    </section>
+
+    <!-- Slide 8 -->
+    <section class="slide" data-title="Bằng chứng và giả thuyết">
+      <div class="content">
+        <span class="presenter-label">EVIDENCE DISCIPLINE</span>
+        <div class="header">
+          <div class="icon-bubble"><svg viewBox="0 0 24 24"><path d="M4 19h16M6 16l4-5 3 3 5-8"/><path d="M18 6h2v2"/></svg></div>
+          <div><div class="kicker">Lợi ích: bằng chứng vs giả thuyết</div><h2 class="slide-title">Nền sinh lý vững; giá trị lâm sàng tại Vinmec vẫn phải được kiểm chứng</h2></div>
+        </div>
+        <div class="evidence-ladder" style="margin-top:34px">
+          <div class="ladder-step one"><span class="label-fact">Đã xác lập</span><div class="step-no">01</div><h3>Sinh lý & DSP</h3><p>Fatigue thường đi kèm thay đổi CV/frequency và amplitude trong protocol phù hợp; MNF/MDF/CV cần đọc cùng lực, task và chất lượng tín hiệu.</p></div>
+          <div class="ladder-step two"><span class="label-research">Đã minh họa nghiên cứu</span><div class="step-no">02</div><h3>Algorithm feasibility</h3><p>KNN/SVM/LDA trên feature sEMG cho kết quả tốt trên tập nghiên cứu nhỏ; paper báo F1 xấp xỉ 95%.</p></div>
+          <div class="ladder-step three"><span class="label-pilot">Cần thí điểm</span><div class="step-no">03</div><h3>Clinical utility tại Vinmec</h3><p>Threshold, generalization, workflow, clinician agreement, thời gian đo và tác động đến quyết định tiến tải.</p></div>
+        </div>
+        <div class="dark-strip" style="margin-top:26px"><strong>Không dùng F1 làm hero claim:</strong> dataset nghiên cứu gồm 10 người khỏe; chưa phải performance cam kết trên bệnh nhân Vinmec.</div>
+        <div class="grid-3" style="margin-top:20px">
+          <div class="card white"><h3>Metric chất lượng</h3><p class="mini">Usable session ratio, artifact rate, abstention appropriateness.</p></div>
+          <div class="card white"><h3>Metric model</h3><p class="mini">Recall/F1/calibration — chỉ khi label đủ đáng tin.</p></div>
+          <div class="card white"><h3>Metric sản phẩm</h3><p class="mini">Report clarity, clinician agreement, turnaround time, actionability.</p></div>
+        </div>
+        <div class="footer"><span>CHƯƠNG 2 · sEMG — ĐÁNH GIÁ MỎI CƠ</span><span>08</span></div>
+      </div>
+    </section>
+
+    <!-- Slide 9 -->
+    <section class="slide" data-title="Demo 1 — Một buổi đo">
+      <div class="content">
+        <span class="presenter-label">CONCEPT DEMO · SYNTHETIC DATA</span>
+        <div class="header" style="margin-bottom:10px">
+          <div class="icon-bubble"><svg viewBox="0 0 24 24"><path d="M4 14l3-4 4 6 4-10 5 8"/><path d="M3 20h18"/></svg></div>
+          <div><div class="kicker">Demo 1 — Mỏi cơ trong buổi tập</div><h2 class="slide-title">Giám sát mỏi cơ thời gian thực: tín hiệu thô → xử lý → đặc trưng → phân loại</h2></div>
+        </div>
+        <div class="d1-preview-tag" id="d1PreviewTag">🔍 Đang hiển thị dữ liệu xem trước — nhấn "Bắt đầu mô phỏng buổi tập" để chạy trực tiếp</div>
+        <div class="demo-shell" style="padding:16px">
+          <div class="demo-toolbar">
+            <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+              <select class="d1-select" id="d1Muscle">
+                <option>Cơ nhị đầu tay (Biceps brachii)</option>
+                <option>Cơ tứ đầu đùi (Quadriceps)</option>
+                <option>Cơ delta vai (Deltoid)</option>
+              </select>
+              <select class="d1-select" id="d1Exercise">
+                <option>Bài tập gập khuỷu tay có kháng lực</option>
+                <option>Bài tập duỗi gối ngồi</option>
+              </select>
+            </div>
+            <div class="demo-buttons">
+              <button class="demo-btn" id="d1Start">▶ Bắt đầu mô phỏng buổi tập</button>
+              <button class="demo-btn secondary" id="d1Reset">⟲ Reset</button>
+            </div>
+          </div>
+          <div class="d1-grid">
+            <div class="demo-panel" style="padding:12px 14px">
+              <h4>Minh hoạ xử lý tín hiệu: dữ liệu thô vs. sau khử nhiễu (rectify + envelope)</h4>
+              <div class="d1-chart-wrap" style="height:170px"><canvas id="d1Denoise" width="840" height="170"></canvas></div>
+              <div style="font-size:10.5px;color:#8EA5BB;margin:3px 0 6px">Đường mờ: sEMG thô (nhiễu cao). Đường đậm: sau tiền xử lý — đầu vào cho trích xuất đặc trưng.</div>
+              <h4>Đặc trưng sau xử lý theo từng rep (RMS &amp; Median Frequency)</h4>
+              <div class="d1-chart-wrap" style="height:160px"><canvas id="d1Features" width="840" height="160"></canvas></div>
+            </div>
+            <div class="demo-panel" style="padding:12px 14px">
+              <h4>Kết quả nhận diện mỏi cơ</h4>
+              <div class="d1-metrics">
+                <div class="metric"><div class="value" id="d1Rep">0 / 20</div><div class="label">Số lần lặp (rep)</div></div>
+                <div class="metric"><div class="value" id="d1Rms">–</div><div class="label">RMS hiện tại</div></div>
+              </div>
+              <div class="d1-gauge-wrap">
+                <svg width="200" height="115" viewBox="0 0 220 130">
+                  <path d="M20,120 A90,90 0 0,1 62,38" fill="none" stroke="#16a34a" stroke-width="14" stroke-linecap="round"/>
+                  <path d="M62,38 A90,90 0 0,1 158,38" fill="none" stroke="#d97706" stroke-width="14" stroke-linecap="round"/>
+                  <path d="M158,38 A90,90 0 0,1 200,120" fill="none" stroke="#dc2626" stroke-width="14" stroke-linecap="round"/>
+                  <g id="d1Needle" style="transform-origin:110px 120px;transform:rotate(-90deg);transition:transform .5s ease">
+                    <line x1="110" y1="120" x2="110" y2="45" stroke="#fff" stroke-width="3.5" stroke-linecap="round"/>
+                  </g>
+                  <circle cx="110" cy="120" r="6" fill="#fff"/>
+                </svg>
+                <div class="d1-gauge-score" id="d1Score">0</div>
+                <div class="d1-gauge-caption">Chỉ số mỏi cơ (Fatigue Index, 0–100)</div>
+              </div>
+              <div class="d1-status d1-status-ok" id="d1Status">Trạng thái: Bình thường</div>
+              <div class="d1-alert" id="d1Alert"></div>
+              <div class="d1-disclaimer">Dữ liệu tín hiệu và chỉ số mỏi cơ là mô phỏng minh hoạ (synthetic) — chưa phải kết quả đo trên bệnh nhân thật.</div>
+            </div>
+          </div>
+        </div>
+        <div class="footer"><span>CHƯƠNG 2 · sEMG — ĐÁNH GIÁ MỎI CƠ</span><span>09</span></div>
+      </div>
+    </section>
+
+    <!-- Slide 10 -->
+    <section class="slide" data-title="Hạ tầng vận hành">
+      <div class="content">
+        <span class="presenter-label">FUTURE-STATE INTEGRATION</span>
+        <div class="header">
+          <div class="icon-bubble"><svg viewBox="0 0 24 24"><path d="M3 7h6v6H3zM15 3h6v6h-6zM15 15h6v6h-6z"/><path d="M9 10h4a3 3 0 0 0 3-3M9 10h4a3 3 0 0 1 3 3v2"/></svg></div>
+          <div><div class="kicker">Hạ tầng vận hành — OH / eForm / EMR</div><h2 class="slide-title">File import trước; tích hợp sâu sau khi workflow chứng minh được giá trị</h2></div>
+        </div>
+        <div class="table-wrap" style="margin-top:32px">
+          <table>
+            <thead><tr><th style="width:22%">Lớp hạ tầng</th><th style="width:28%">MVP / Feasibility</th><th style="width:30%">Pilot / Future state</th><th>Trạng thái</th></tr></thead>
+            <tbody>
+              <tr><td>Noraxon / myoRESEARCH</td><td>Import CSV/TXT/MAT/C3D hoặc processed export.</td><td>Adapter/stream nếu license và API cho phép.</td><td><span class="pill amber">CẦN AUDIT</span></td></tr>
+              <tr><td>OH / chỉ định</td><td>Chưa bắt buộc cho technical spike.</td><td>Mã chỉ định “đánh giá mỏi cơ sEMG”.</td><td><span class="pill gray">FUTURE</span></td></tr>
+              <tr><td>eForm</td><td>Metadata JSON/form local: cơ, bên, protocol, mốc điều trị.</td><td>Tận dụng khung eForm nội bộ nếu được xác nhận.</td><td><span class="pill amber">CẦN XÁC NHẬN</span></td></tr>
+              <tr><td>EMR/HIS</td><td>Export PDF/HTML đã review.</td><td>Đồng bộ report sau khi workflow và governance được duyệt.</td><td><span class="pill gray">SAU PILOT</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="callout" style="margin-top:30px">Nguyên tắc chống scope creep: <span class="accent">chứng minh clinical readability và workflow trước; FHIR/HL7 sau.</span></div>
+        <div class="grid-3" style="margin-top:22px">
+          <div class="card"><h3>Raw data</h3><p class="mini">Ưu tiên xử lý on-premises, checksum và versioning.</p></div>
+          <div class="card"><h3>Feature/report</h3><p class="mini">Ẩn danh, version protocol/preprocess/model/report.</p></div>
+          <div class="card"><h3>Review</h3><p class="mini">Kết quả final chỉ sau human sign-off.</p></div>
+        </div>
+        <div class="footer"><span>CHƯƠNG 2 · sEMG — ĐÁNH GIÁ MỎI CƠ</span><span>10</span></div>
+      </div>
+    </section>
+
+    <!-- Slide 11 -->
+    <section class="slide" data-title="Quy trình 7 bước">
+      <div class="content">
+        <span class="presenter-label">SAFE-BY-DESIGN WORKFLOW</span>
+        <div class="header" style="margin-bottom:16px">
+          <div class="icon-bubble"><svg viewBox="0 0 24 24"><path d="M5 5h4v4H5zM15 5h4v4h-4zM10 15h4v4h-4z"/><path d="M9 7h6M17 9v3a3 3 0 0 1-3 3M7 9v3a3 3 0 0 0 3 3"/></svg></div>
+          <div><div class="kicker">Quy trình vận hành 7 bước</div><h2 class="slide-title">Quality trước AI; abstention là một output hợp lệ</h2></div>
+        </div>
+        <div class="flow-steps">
+          <div class="flow-step"><div class="num">1</div><h4>Chỉ định & chuẩn bị</h4><p>Cơ, bên, protocol, da và placement.</p></div>
+          <div class="flow-step"><div class="num">2</div><h4>Thu nhận</h4><p>Noraxon ± force/VICON; raw giữ nội bộ.</p></div>
+          <div class="flow-step focus"><div class="num">3</div><h4>Quality gate</h4><p>Noise, dropout, clipping, metadata, MFCV eligibility.</p></div>
+          <div class="flow-step"><div class="num">4</div><h4>Feature</h4><p>RMS/MAV/MNF/MDF/slope/CV nếu đủ.</p></div>
+          <div class="flow-step"><div class="num">5</div><h4>Evidence / ML</h4><p>Status, confidence, reason codes.</p></div>
+          <div class="flow-step"><div class="num">6</div><h4>Human review</h4><p>KTV kỹ thuật; bác sĩ diễn giải/ký.</p></div>
+          <div class="flow-step"><div class="num">7</div><h4>Report & theo dõi dọc</h4><p>So sánh cùng cơ, cùng protocol.</p></div>
+        </div>
+        <div class="callout" style="margin-top:26px;font-size:20px"><span class="accent">Cổng abstention:</span> phân biệt “chưa phát hiện mỏi” với “dữ liệu chưa đủ điều kiện phân tích” — tránh kết luận sai khi tín hiệu kém.</div>
+        <div class="grid-3" style="margin-top:22px">
+          <div class="card white"><h3>Ai vận hành?</h3><p class="mini">KTV Motion Lab/PHCN thực hiện đo và kiểm tra setup.</p></div>
+          <div class="card white"><h3>Ai chịu trách nhiệm?</h3><p class="mini">Bác sĩ/KTV được phân quyền review; bác sĩ quyết định cuối.</p></div>
+          <div class="card white"><h3>Thời gian & nghẽn?</h3><p class="mini">Chưa đo. Feasibility phải ghi thời gian setup, đo, phân tích và review.</p></div>
+        </div>
+        <div class="footer"><span>CHƯƠNG 2 · sEMG — ĐÁNH GIÁ MỎI CƠ</span><span>11</span></div>
+      </div>
+    </section>
+
+    <!-- Slide 12 -->
+    <section class="slide" data-title="Demo 2 — Theo dõi dọc">
+      <div class="content">
+        <span class="presenter-label">CONCEPT DEMO · LONGITUDINAL</span>
+        <div class="header" style="margin-bottom:18px">
+          <div class="icon-bubble"><svg viewBox="0 0 24 24"><path d="M4 19h16M5 15l4-4 4 2 6-7"/><path d="M16 6h3v3"/></svg></div>
+          <div><div class="kicker">Demo 2 — Tiến độ phục hồi</div><h2 class="slide-title">Không chỉ “có mỏi” — cho thấy sức bền thay đổi bao nhiêu qua từng buổi</h2></div>
+        </div>
+        <div class="demo-shell">
+          <div class="demo-toolbar">
+            <div class="demo-title">Bệnh nhân ẩn danh · ACL rehab · cùng protocol · 6 session</div>
+            <div class="demo-buttons"><button class="demo-btn" id="trendRun">▶ Tạo báo cáo tiến độ</button><button class="demo-btn secondary" id="trendReset">Reset</button></div>
+          </div>
+          <div class="trend-grid">
+            <div class="demo-panel">
+              <h4>Fatigue onset & MDF slope qua các session</h4>
+              <div class="canvas-wrap"><canvas id="trendCanvas" width="900" height="300"></canvas></div>
+            </div>
+            <div class="demo-panel trend-summary">
+              <div class="trend-item"><strong id="onsetDelta">+0 s</strong><span>Fatigue onset thay đổi so với session đầu</span></div>
+              <div class="trend-item"><strong id="slopeDelta">0%</strong><span>MDF decline giảm về độ dốc</span></div>
+              <div class="trend-item"><strong id="asymDelta">—</strong><span>Side-to-side asymmetry (nếu có hai bên)</span></div>
+              <div class="quality-box quality-pass" id="trendStatus">CHƯA TẠO BÁO CÁO</div>
+              <div class="reason-box" id="trendReason">Các metric gốc được ưu tiên hơn một score 0–100 chưa được validate.</div>
+            </div>
+          </div>
+        </div>
+        <div class="grid-3" style="margin-top:18px">
+          <div class="card white"><h3>So sánh hợp lệ khi</h3><p class="mini">Cùng cơ, cùng bên, cùng protocol và cùng preprocessing/version.</p></div>
+          <div class="card white"><h3>Không so sánh khi</h3><p class="mini">Khác task, khác setup, metadata thiếu hoặc QC fail.</p></div>
+          <div class="card white"><h3>Ngôn ngữ report</h3><p class="mini">“Evidence gợi ý cải thiện” — không tự kết luận đủ tăng tải/thi đấu.</p></div>
+        </div>
+        <div class="footer"><span>CHƯƠNG 2 · sEMG — ĐÁNH GIÁ MỎI CƠ</span><span>12</span></div>
+      </div>
+    </section>
+
+    <!-- Slide 13 -->
+    <section class="slide" data-title="Thí điểm một trang">
+      <div class="content">
+        <span class="presenter-label">STAGED PILOT</span>
+        <div class="header">
+          <div class="icon-bubble"><svg viewBox="0 0 24 24"><path d="M4 19h16M6 16V8M12 16V4M18 16v-6"/></svg></div>
+          <div><div class="kicker">Đề xuất thí điểm 1 trang</div><h2 class="slide-title">Không xin một dự án lớn ngay — xin ba cổng quyết định nhỏ</h2></div>
+        </div>
+        <div class="timeline" style="margin-top:34px">
+          <div class="gate"><div class="gate-dot">G0</div><h3>Technical / Data Audit</h3><div class="duration">3–5 ngày làm việc</div><ul><li>Kiểm tra device, export, Fs, channel map.</li><li>3–5 sample files ẩn danh.</li><li>Kết luận MFCV eligibility.</li><li>Go/no-go: có data usable?</li></ul></div>
+          <div class="gate"><div class="gate-dot">G1</div><h3>Offline Feasibility</h3><div class="duration">10 ngày làm việc</div><ul><li>QC + feature + JSON/report.</li><li>3–10 session/sample.</li><li>Đo reproducibility và thời gian xử lý.</li><li>Go/no-go: evidence có logic?</li></ul></div>
+          <div class="gate"><div class="gate-dot">G2</div><h3>Clinical Pilot</h3><div class="duration">8–12 tuần sau duyệt</div><ul><li>Cohort ACL hẹp, protocol chuẩn.</li><li>N mục tiêu 20–30, chốt sau feasibility/ethics.</li><li>Clinician usefulness + workflow.</li><li>Go/pivot/stop trước mở rộng.</li></ul></div>
+        </div>
+        <div class="grid-3" style="margin-top:22px">
+          <div class="card white" style="border-top:6px solid var(--teal-dark)"><span class="pill teal">DATA / OPS</span><h3 style="margin-top:12px">Import ≥90% · usable ≥80%</h3><p class="mini">Analysis target ≤5 phút/session; ngưỡng cần stakeholder xác nhận.</p></div>
+          <div class="card white" style="border-top:6px solid var(--green)"><span class="pill green">CLINICAL USEFULNESS</span><h3 style="margin-top:12px">Clarity ≥4/5 · agreement 70–80%</h3><p class="mini">Đo khả năng hiểu, đồng thuận và fit với workflow review.</p></div>
+          <div class="card white" style="border-top:6px solid var(--amber)"><span class="pill amber">SAFETY</span><h3 style="margin-top:12px">Unsafe conclusion = 0</h3><p class="mini">Audit abstention và mọi trường hợp human review bypass.</p></div>
+        </div>
+        <div class="footer"><span>CHƯƠNG 2 · sEMG — ĐÁNH GIÁ MỎI CƠ</span><span>13</span></div>
+      </div>
+    </section>
+
+    <!-- Slide 14 -->
+    <section class="slide dark" data-title="Quyết định cần chốt">
+      <div class="content">
+        <div class="hero-kicker">Bước tiếp theo & quyết định cần chốt</div>
+        <h2 class="slide-title" style="font-size:48px;max-width:1300px">Phê duyệt một technical audit 5 ngày — không phải full clinical pilot</h2>
+        <p class="slide-subtitle" style="font-size:22px;max-width:1200px">Mục tiêu là giảm ba bất định lớn nhất: dữ liệu có lấy được không, MFCV có khả thi không, và output nào thật sự hữu ích cho bác sĩ/KTV.</p>
+        <div class="cta-grid">
+          <div class="cta-card"><h3>Ba phê duyệt cần xin</h3><ol><li>Chỉ định một đầu mối Motion Lab/Noraxon.</li><li>Chỉ định một clinical owner PHCN/Y học thể thao.</li><li>Cho phép tiếp cận 3–5 sample export đã ẩn danh và một buổi kiểm tra cấu hình.</li></ol></div>
+          <div class="amber-box"><div class="eyebrow">Lãnh đạo nhận được sau 10 ngày làm việc</div><h3>Feasibility memo + demo trên sample thực</h3><p>Kết luận có/không MFCV, scope/timeline/chi phí pilot đáng tin hơn, và khuyến nghị <strong>GO / PIVOT / STOP</strong>.</p></div>
+        </div>
+        <div class="dark-strip" style="margin-top:32px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);font-size:22px"><strong>Thông điệp đóng:</strong> Giá trị đầu tiên không phải “model 95%” — mà là biết chính xác hạ tầng hiện tại cho phép làm gì và pilot nào đáng đầu tư.</div>
+        <div class="confidential">Decision requested · 5-day audit</div>
+      </div>
+    </section>
+
+    <!-- Slide 15 -->
+    <section class="slide" data-title="Tài liệu tham khảo">
+      <div class="content">
+        <span class="presenter-label">APPENDIX</span>
+        <div class="header">
+          <div class="icon-bubble"><svg viewBox="0 0 24 24"><path d="M5 4h14v16H5z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg></div>
+          <div><div class="kicker">Tài liệu tham khảo & source notes</div><h2 class="slide-title">Nguồn khoa học, hạ tầng và các điểm cần xác nhận</h2></div>
+        </div>
+        <div class="reference-cols" style="margin-top:28px">
+          <div class="ref-card"><h3>Nguồn khoa học & phương pháp</h3><ol class="ref-list">
+            <li>Nguyen V.-H. et al. <em>After-Fatigue Condition: A Novel Analysis Based on Surface EMG Signals</em>, APSIPA ASC 2023.</li>
+            <li>Huu N.T. et al. <em>Detection of Muscles Fatigue Through Surface EMG Signals Utilizing Machine Learning Algorithm</em>, IFMBE/Springer 2025.</li>
+            <li>Ab Ghafar N.A. et al. <em>Classification of Muscle Fatigue during Prolonged Driving</em>, ELEKTRIKA 2022.</li>
+            <li>Merletti/Farina và các tài liệu nền về sEMG, linear electrode array, conduction velocity.</li>
+            <li>Tài liệu nội bộ: quy trình vận hành lâm sàng, định vị & tích hợp, implementation plan, demo use case.</li>
+          </ol></div>
+          <div class="ref-card"><h3>Nguồn hạ tầng / sản phẩm chính thức</h3><ol class="ref-list">
+            <li><a href="https://www.vinmec.com/vie/bai-viet/phong-thi-nghiem-phan-tich-van-dong-motion-lab-vi" target="_blank">Vinmec — Phòng thí nghiệm phân tích vận động Motion Lab</a>.</li>
+            <li><a href="https://www.noraxon.com/our-products/ultium-emg/" target="_blank">Noraxon — Ultium EMG specifications</a>.</li>
+            <li><a href="https://www.noraxon.com/custom-report-highlight-emg-frequency" target="_blank">Noraxon — EMG Frequency Fatigue Report</a>.</li>
+            <li><strong>Cần xác nhận:</strong> raw export, format, filter, linear array, spacing, actual workflow time, consent/ethics và pilot budget.</li>
+          </ol>
+          <div class="divider"></div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap"><span class="label-fact">Đã xác lập</span><span class="label-research">Đã minh họa nghiên cứu</span><span class="label-pilot">Cần thí điểm</span></div>
+          </div>
+        </div>
+        <div class="callout" style="margin-top:26px;font-size:19px">Quy tắc xuyên suốt: <span class="accent">Fact ≠ Assumption ≠ Pilot hypothesis.</span> Mỗi claim trong deck phải thuộc đúng một nhóm.</div>
+        <div class="footer"><span>PHỤ LỤC · TÀI LIỆU THAM KHẢO</span><span>15</span></div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<div id="progress"></div>
+<div id="controls" aria-label="Điều khiển trình chiếu">
+  <button id="prevBtn" title="Slide trước (←)">←</button>
+  <span id="counter">1 / 15</span>
+  <button id="nextBtn" title="Slide sau (→)">→</button>
+  <button id="notesBtn" title="Ghi chú (N)">N</button>
+  <button id="overviewBtn" title="Tổng quan (O)">▦</button>
+  <button id="fullBtn" title="Toàn màn hình (F)">⛶</button>
+</div>
+<div id="help">← → / Space · F fullscreen · N notes · O overview · P print</div>
+<aside id="notesPanel"><h3 id="notesTitle">Speaker notes</h3><p id="notesText"></p></aside>
+<div id="overview"><div class="overview-grid" id="overviewGrid"></div></div>
+
+<script>
+(() => {
+  const slides = [...document.querySelectorAll('.slide')];
+  let index = 0;
+  const stage = document.getElementById('stage');
+  const counter = document.getElementById('counter');
+  const progress = document.getElementById('progress');
+  const notesPanel = document.getElementById('notesPanel');
+  const notesTitle = document.getElementById('notesTitle');
+  const notesText = document.getElementById('notesText');
+  const overview = document.getElementById('overview');
+  const overviewGrid = document.getElementById('overviewGrid');
+
+  const notes = [
+    `Mở đầu trong 20 giây. Không giải thích MFCV ngay.\nThông điệp: đây là lớp intelligence, không phải sensor mới.\nAsk cuối: audit nhỏ, không xin full pilot.`,
+    `Chủ động thừa nhận Noraxon đã có fatigue report.\nKhoảng trống không phải thiếu phép đo; là clinical interpretation, longitudinal và safety.\nKết nối phản biện “người tập tự biết mỏi”: cảm nhận là một input, không phải thước đo định lượng duy nhất.`,
+    `Nhấn mạnh đây là ca giả định.\nKhông nói AI giữ tải. Nói evidence làm thay đổi mức độ tự tin và kích hoạt review.\nMFCV chỉ hiện nếu eligible.`,
+    `Đây là slide tạo niềm tin.\nBa lần phủ định: không thay Noraxon, không chẩn đoán, không tự quyết định.\nHuman-in-the-loop là product requirement, không phải disclaimer cuối slide.`,
+    `Thu hẹp use case. Không pitch tất cả bệnh nhân/cơ/động tác ngay.\nBeachhead: ACL, quadriceps, cùng protocol qua nhiều buổi.`,
+    `Slide khác biệt quan trọng nhất.\nKhông công kích Noraxon. Dùng “platform + intelligence layer”.\nDẫn hạ tầng hiện có để chứng minh software-first path.`,
+    `Không giả định sampling cao = MFCV.\nGeometry điện cực mới là điều kiện quyết định.\nPlan B vẫn tạo giá trị — tránh để dự án sống/chết theo MFCV.`,
+    `F1 chỉ là algorithm feasibility.\nNói rõ n=10 healthy và chưa local validation.\nHero metrics sau này là usability, agreement, quality và safety.`,
+    `Demo trong 60–90 giây.\nTrước tiên bấm QC fail để cho thấy abstention. Sau đó chạy pass.\nKhông dành quá nhiều thời gian vào waveform; tập trung logic output.`,
+    `Tích hợp sâu là future-state.\nMVP ưu tiên file import + report.\nTránh để OH/eForm/EMR làm scope phình trước khi chứng minh value.`,
+    `Phóng to bước 3.\nPhân biệt no-fatigue, low-confidence và abstain.\nThẳng thắn: chưa biết mỗi buổi mất bao lâu — đó là metric feasibility.`,
+    `Bấm “Tạo báo cáo tiến độ”.\nGiải thích vì sao metric gốc tốt hơn một score 0–100 chưa validate.\nChỉ so sánh cùng protocol/version.`,
+    `Đây là slide giảm rủi ro cho sếp.\nKhông xin 16 tuần ngay.\nG0/G1 tạo đủ evidence để quyết định G2.`,
+    `Kết thúc bằng một ask rất nhỏ và cụ thể.\nĐọc đúng ba phê duyệt.\nDừng lại sau câu GO/PIVOT/STOP để sếp phản hồi.`,
+    `Appendix. Chỉ mở khi bị hỏi nguồn, F1, Noraxon, MFCV hoặc hạ tầng.\nKhông đọc slide này trong main pitch.`
+  ];
+
+  function resize(){
+    const scale = Math.min(window.innerWidth/1600, window.innerHeight/900);
+    stage.style.transform = `scale(${scale})`;
+  }
+  function show(i){
+    index = Math.max(0, Math.min(slides.length-1, i));
+    slides.forEach((s,j)=>s.classList.toggle('active',j===index));
+    counter.textContent = `${index+1} / ${slides.length}`;
+    progress.style.width = `${((index+1)/slides.length)*100}%`;
+    location.hash = `slide-${index+1}`;
+    updateNotes();
+  }
+  function updateNotes(){
+    notesTitle.textContent = `Slide ${index+1}: ${slides[index].dataset.title}`;
+    notesText.textContent = notes[index] || '';
+  }
+  function next(){show(index+1)}
+  function prev(){show(index-1)}
+  function toggleFull(){
+    if(!document.fullscreenElement) document.documentElement.requestFullscreen?.();
+    else document.exitFullscreen?.();
+  }
+  function toggleNotes(){notesPanel.classList.toggle('open');updateNotes()}
+  function toggleOverview(){overview.classList.toggle('open')}
+
+  document.getElementById('nextBtn').onclick=next;
+  document.getElementById('prevBtn').onclick=prev;
+  document.getElementById('fullBtn').onclick=toggleFull;
+  document.getElementById('notesBtn').onclick=toggleNotes;
+  document.getElementById('overviewBtn').onclick=toggleOverview;
+
+  slides.forEach((s,i)=>{
+    const c=document.createElement('div');
+    c.className='overview-card';
+    c.innerHTML=`<div class="no">SLIDE ${String(i+1).padStart(2,'0')}</div><h4>${s.dataset.title}</h4>`;
+    c.onclick=()=>{overview.classList.remove('open');show(i)};
+    overviewGrid.appendChild(c);
+  });
+
+  document.addEventListener('keydown',e=>{
+    if(e.target.matches('button,select,input,textarea')) return;
+    if(['ArrowRight','PageDown',' '].includes(e.key)){e.preventDefault();next()}
+    else if(['ArrowLeft','PageUp'].includes(e.key)){e.preventDefault();prev()}
+    else if(e.key==='Home')show(0);
+    else if(e.key==='End')show(slides.length-1);
+    else if(e.key.toLowerCase()==='f')toggleFull();
+    else if(e.key.toLowerCase()==='n')toggleNotes();
+    else if(e.key.toLowerCase()==='o')toggleOverview();
+    else if(e.key.toLowerCase()==='p')window.print();
+    else if(e.key==='Escape'){overview.classList.remove('open');notesPanel.classList.remove('open')}
+  });
+  window.addEventListener('resize',resize);
+  const hashMatch=location.hash.match(/slide-(\d+)/);
+  if(hashMatch) index=Math.max(0,Math.min(slides.length-1,Number(hashMatch[1])-1));
+  resize();show(index);
+
+  // ---------------- Demo 1 — Real-time monitoring ----------------
+  const d1DenoiseCanvas=document.getElementById('d1Denoise');
+  const d1DenoiseCtx=d1DenoiseCanvas.getContext('2d');
+  const d1FeatCanvas=document.getElementById('d1Features');
+  const d1FeatCtx=d1FeatCanvas.getContext('2d');
+  let d1Timer=null, d1Rep=0;
+  const d1TotalReps=20;
+  const d1RmsData=[], d1MdfData=[];
+
+  function genBurst(n,targetRMS,freshness){
+    const arr=[],freqs=[];
+    for(let i=0;i<4;i++) freqs.push(Math.random()*.2+.15+freshness*(Math.random()*.35+.15));
+    for(let i=0;i<n;i++){
+      let s=0;
+      for(let c=0;c<4;c++) s+=Math.sin(i*freqs[c]+Math.random()*6)*(Math.random()*.5+.5);
+      s+=(Math.random()-.5)*2;
+      arr.push(s);
+    }
+    const rms=Math.sqrt(arr.reduce((a,b)=>a+b*b,0)/arr.length)||1;
+    return arr.map(v=>v/rms*targetRMS);
+  }
+
+  function envSmooth(raw,win){
+    win=win||9; const half=Math.floor(win/2);
+    const rect=raw.map(v=>Math.abs(v)), out=[];
+    for(let i=0;i<rect.length;i++){
+      const s=Math.max(0,i-half),e=Math.min(rect.length-1,i+half);
+      let sum=0,cnt=0;
+      for(let j=s;j<=e;j++){sum+=rect[j];cnt++;}
+      out.push(sum/cnt);
+    }
+    return out;
+  }
+
+  function drawDenoise(raw,env){
+    const c=d1DenoiseCanvas,ctx=d1DenoiseCtx;
+    const w=c.width,h=c.height;
+    ctx.clearRect(0,0,w,h); ctx.fillStyle='#0A1424'; ctx.fillRect(0,0,w,h);
+    ctx.strokeStyle='#1a2540'; ctx.lineWidth=.5;
+    for(let y=0;y<h;y+=30){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke()}
+    ctx.strokeStyle='#2a3a58'; ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(0,h/2);ctx.lineTo(w,h/2);ctx.stroke();
+    const sx=w/raw.length;
+    ctx.strokeStyle='rgba(139,147,173,0.4)'; ctx.lineWidth=1; ctx.beginPath();
+    for(let i=0;i<raw.length;i++){const x=i*sx,y=h/2-raw[i]*(h/8);i===0?ctx.moveTo(x,y):ctx.lineTo(x,y)}
+    ctx.stroke();
+    ctx.strokeStyle='#22d3ee'; ctx.lineWidth=2.5; ctx.beginPath();
+    for(let i=0;i<env.length;i++){const x=i*sx,y=h/2-env[i]*(h/8);i===0?ctx.moveTo(x,y):ctx.lineTo(x,y)}
+    ctx.stroke();
+    ctx.font='11px Arial';
+    ctx.fillStyle='rgba(139,147,173,0.6)'; ctx.fillText('\u25cf T\u00edn hi\u1ec7u th\u00f4 (raw)',14,16);
+    ctx.fillStyle='#22d3ee'; ctx.fillText('\u25cf Sau x\u1eed l\u00fd (envelope)',190,16);
+  }
+
+  function drawFeatures(rmsArr,mdfArr){
+    const c=d1FeatCanvas,ctx=d1FeatCtx;
+    const w=c.width,h=c.height;
+    const pad={l:42,r:42,t:22,b:26};
+    const pw=w-pad.l-pad.r,ph=h-pad.t-pad.b;
+    ctx.clearRect(0,0,w,h); ctx.fillStyle='#0A1424'; ctx.fillRect(0,0,w,h);
+    if(!rmsArr.length) return;
+    const rMax=Math.max(...rmsArr,3.5)*1.1;
+    const mMax=Math.max(...mdfArr,70)*1.1;
+    const n=rmsArr.length;
+    const bw=Math.min(pw/n*.7,28);
+    ctx.strokeStyle='#1a2540'; ctx.lineWidth=.5;
+    for(let i=0;i<5;i++){const y=pad.t+ph*i/4;ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(w-pad.r,y);ctx.stroke()}
+    for(let i=0;i<n;i++){
+      const x=pad.l+(i+.5)*pw/n;
+      const bh=(rmsArr[i]/rMax)*ph;
+      ctx.fillStyle='rgba(251,113,133,0.7)';
+      ctx.fillRect(x-bw/2,pad.t+ph-bh,bw,bh);
+    }
+    ctx.strokeStyle='#60a5fa'; ctx.lineWidth=2.5; ctx.beginPath();
+    for(let i=0;i<n;i++){const x=pad.l+(i+.5)*pw/n;const y=pad.t+ph-(mdfArr[i]/mMax)*ph;i===0?ctx.moveTo(x,y):ctx.lineTo(x,y)}
+    ctx.stroke();
+    for(let i=0;i<n;i++){const x=pad.l+(i+.5)*pw/n;const y=pad.t+ph-(mdfArr[i]/mMax)*ph;ctx.fillStyle='#60a5fa';ctx.beginPath();ctx.arc(x,y,3,0,Math.PI*2);ctx.fill()}
+    ctx.fillStyle='#8EA5BB'; ctx.font='10px Arial'; ctx.textAlign='center';
+    for(let i=0;i<n;i++){const x=pad.l+(i+.5)*pw/n;ctx.fillText('R'+(i+1),x,h-7)}
+    ctx.textAlign='left';
+    ctx.fillStyle='#fb7185'; ctx.font='9px Arial';
+    for(let i=0;i<=4;i++){const y=pad.t+ph*i/4;ctx.fillText((rMax*(4-i)/4).toFixed(1),3,y+3)}
+    ctx.fillStyle='#60a5fa'; ctx.textAlign='right';
+    for(let i=0;i<=4;i++){const y=pad.t+ph*i/4;ctx.fillText(Math.round(mMax*(4-i)/4),w-3,y+3)}
+    ctx.textAlign='left';
+    ctx.font='10px Arial';
+    ctx.fillStyle='#fb7185'; ctx.fillText('\u25a0 RMS',pad.l+5,15);
+    ctx.fillStyle='#60a5fa'; ctx.fillText('\u2014 Median Freq (Hz)',pad.l+65,15);
+  }
+
+  function d1SetGauge(score){
+    const cl=Math.max(0,Math.min(100,score));
+    const angle=-90+cl/100*180;
+    document.getElementById('d1Needle').style.transform=`rotate(${angle}deg)`;
+    document.getElementById('d1Score').textContent=Math.round(cl);
+    const st=document.getElementById('d1Status');
+    const al=document.getElementById('d1Alert');
+    if(cl<40){
+      st.className='d1-status d1-status-ok'; st.textContent='Tr\u1ea1ng th\u00e1i: B\u00ecnh th\u01b0\u1eddng';
+      al.className='d1-alert';
+    }else if(cl<70){
+      st.className='d1-status d1-status-warn'; st.textContent='Tr\u1ea1ng th\u00e1i: B\u1eaft \u0111\u1ea7u m\u1ecfi';
+      al.className='d1-alert warn show'; al.textContent='\u26a0 C\u01a1 b\u1eaft \u0111\u1ea7u c\u00f3 d\u1ea5u hi\u1ec7u m\u1ecfi \u2014 theo d\u00f5i th\u00eam 2-3 rep ti\u1ebfp theo.';
+    }else{
+      st.className='d1-status d1-status-danger'; st.textContent='Tr\u1ea1ng th\u00e1i: M\u1ecfi cao';
+      al.className='d1-alert danger show'; al.textContent='\u26d4 Khuy\u1ebfn ngh\u1ecb: d\u1eebng b\u00e0i t\u1eadp ho\u1eb7c cho b\u1ec7nh nh\u00e2n ngh\u1ec9 gi\u1eefa hi\u1ec7p \u0111\u1ec3 tr\u00e1nh ch\u1ea5n th\u01b0\u01a1ng.';
+    }
+  }
+
+  function d1Step(){
+    d1Rep++;
+    document.getElementById('d1Rep').textContent=`${d1Rep} / ${d1TotalReps}`;
+    const progress=d1Rep/d1TotalReps;
+    const fatigue=Math.max(0,Math.min(1,progress*1.15+(Math.random()-.5)*.1));
+    const targetRMS=1.0+fatigue*2.3;
+    const freshness=1-fatigue;
+    const burst=genBurst(200,targetRMS,freshness);
+    const env=envSmooth(burst,9);
+    drawDenoise(burst,env);
+    document.getElementById('d1Rms').textContent=targetRMS.toFixed(2);
+    const mdf=65-fatigue*22+(Math.random()-.5)*3;
+    d1RmsData.push(targetRMS);
+    d1MdfData.push(mdf);
+    drawFeatures(d1RmsData,d1MdfData);
+    d1SetGauge(fatigue*100);
+    if(d1Rep>=d1TotalReps){
+      clearInterval(d1Timer);
+      document.getElementById('d1Start').disabled=false;
+      document.getElementById('d1Start').textContent='\u25b6 B\u1eaft \u0111\u1ea7u m\u00f4 ph\u1ecfng bu\u1ed5i t\u1eadp';
+    }
+  }
+
+  function d1Reset(){
+    clearInterval(d1Timer); d1Rep=0;
+    d1RmsData.length=0; d1MdfData.length=0;
+    document.getElementById('d1Rep').textContent='0 / 20';
+    document.getElementById('d1Rms').textContent='\u2013';
+    drawDenoise(Array(200).fill(0),Array(200).fill(0));
+    drawFeatures([],[]);
+    d1SetGauge(0);
+    document.getElementById('d1Start').disabled=false;
+    document.getElementById('d1Start').textContent='\u25b6 B\u1eaft \u0111\u1ea7u m\u00f4 ph\u1ecfng bu\u1ed5i t\u1eadp';
+  }
+
+  function d1Seed(){
+    const seedN=8; let lastB,lastE;
+    for(let r=1;r<=seedN;r++){
+      const p=r/d1TotalReps;
+      const f=Math.max(0,Math.min(1,p*1.15));
+      const tRMS=1.0+f*2.3, fr=1-f;
+      lastB=genBurst(200,tRMS,fr);
+      lastE=envSmooth(lastB,9);
+      d1RmsData.push(tRMS);
+      d1MdfData.push(65-f*22);
+    }
+    drawDenoise(lastB,lastE);
+    drawFeatures(d1RmsData,d1MdfData);
+    document.getElementById('d1Rep').textContent=`${seedN} / ${d1TotalReps}`;
+    document.getElementById('d1Rms').textContent=d1RmsData[d1RmsData.length-1].toFixed(2);
+    d1SetGauge((seedN/d1TotalReps)*115);
+  }
+  d1Seed();
+
+  document.getElementById('d1Start').addEventListener('click',()=>{
+    d1Reset();
+    document.getElementById('d1PreviewTag').style.display='none';
+    document.getElementById('d1Start').disabled=true;
+    document.getElementById('d1Start').textContent='\u23f1 \u0110ang m\u00f4 ph\u1ecfng...';
+    d1Timer=setInterval(d1Step,650);
+  });
+  document.getElementById('d1Reset').addEventListener('click',()=>{
+    d1Reset();
+    document.getElementById('d1PreviewTag').style.display='inline-flex';
+    d1Seed();
+  });
+
+  // ---------------- Demo 2 ----------------
+  const tCanvas=document.getElementById('trendCanvas');
+  const tctx=tCanvas.getContext('2d');
+  const onset=[36,42,48,55,62,70];
+  const slope=[-1.18,-1.05,-.92,-.78,-.64,-.51];
+  function drawTrend(reveal=6){
+    const w=tCanvas.width,h=tCanvas.height,pad=55;
+    tctx.clearRect(0,0,w,h);tctx.fillStyle='#0A1424';tctx.fillRect(0,0,w,h);
+    tctx.strokeStyle='#20334E';tctx.lineWidth=1;
+    for(let y=50;y<h;y+=50){tctx.beginPath();tctx.moveTo(pad,y);tctx.lineTo(w-25,y);tctx.stroke()}
+    for(let i=0;i<6;i++){const x=pad+i*(w-pad-35)/5;tctx.beginPath();tctx.moveTo(x,28);tctx.lineTo(x,h-38);tctx.stroke()}
+    tctx.fillStyle='#8EA5BB';tctx.font='13px Arial';
+    for(let i=0;i<6;i++){const x=pad+i*(w-pad-35)/5;tctx.fillText(`S${i+1}`,x-9,h-14)}
+    // onset line
+    tctx.strokeStyle='#66E1CF';tctx.lineWidth=4;tctx.beginPath();
+    for(let i=0;i<reveal;i++){const x=pad+i*(w-pad-35)/5;const y=h-55-(onset[i]-30)*4.5;if(i===0)tctx.moveTo(x,y);else tctx.lineTo(x,y)}tctx.stroke();
+    for(let i=0;i<reveal;i++){const x=pad+i*(w-pad-35)/5;const y=h-55-(onset[i]-30)*4.5;tctx.fillStyle='#66E1CF';tctx.beginPath();tctx.arc(x,y,6,0,Math.PI*2);tctx.fill()}
+    // slope line normalized
+    tctx.strokeStyle='#66A8FF';tctx.lineWidth=4;tctx.beginPath();
+    for(let i=0;i<reveal;i++){const x=pad+i*(w-pad-35)/5;const y=55+(-slope[i]-.45)*135;if(i===0)tctx.moveTo(x,y);else tctx.lineTo(x,y)}tctx.stroke();
+    for(let i=0;i<reveal;i++){const x=pad+i*(w-pad-35)/5;const y=55+(-slope[i]-.45)*135;tctx.fillStyle='#66A8FF';tctx.beginPath();tctx.arc(x,y,6,0,Math.PI*2);tctx.fill()}
+    tctx.fillStyle='#66E1CF';tctx.fillText('Fatigue onset ↑',18,24);tctx.fillStyle='#66A8FF';tctx.fillText('MDF slope cải thiện',145,24);
+  }
+  drawTrend(1);
+  let trendAnim=null;
+  document.getElementById('trendRun').onclick=()=>{
+    clearInterval(trendAnim);let r=1;drawTrend(r);document.getElementById('trendStatus').className='quality-box quality-warn';document.getElementById('trendStatus').textContent='ĐANG TỔNG HỢP…';
+    trendAnim=setInterval(()=>{r++;drawTrend(Math.min(6,r));if(r>=6){clearInterval(trendAnim);document.getElementById('onsetDelta').textContent='+34 s';document.getElementById('slopeDelta').textContent='57% nhẹ hơn';document.getElementById('asymDelta').textContent='14% → 6%';const st=document.getElementById('trendStatus');st.className='quality-box quality-pass';st.textContent='EVIDENCE GỢI Ý CẢI THIỆN';document.getElementById('trendReason').textContent='Fatigue onset muộn hơn, MDF decline nhẹ hơn và asymmetry giảm. Bác sĩ/KTV đối chiếu cùng lực, RPE và vận động.'}},260);
+  };
+  document.getElementById('trendReset').onclick=()=>{clearInterval(trendAnim);drawTrend(1);document.getElementById('onsetDelta').textContent='+0 s';document.getElementById('slopeDelta').textContent='0%';document.getElementById('asymDelta').textContent='—';const st=document.getElementById('trendStatus');st.className='quality-box quality-pass';st.textContent='CHƯA TẠO BÁO CÁO';document.getElementById('trendReason').textContent='Các metric gốc được ưu tiên hơn một score 0–100 chưa được validate.'};
+})();
+</script>
+</body>
+</html>
