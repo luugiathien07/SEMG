@@ -121,11 +121,22 @@ def _render_realtime_tab() -> None:
             )
             channel_preds = get_channel_preds(SUBJECT, best_model)
 
+            # Display-only: trims each file's low-amplitude contraction
+            # ramp-in/ramp-out so the concatenated waveform/trend chart reads
+            # as one continuous session instead of dipping at every %MVC
+            # boundary. Classification above already ran on the untrimmed
+            # `signal`/`segments`, so predictions are unaffected.
+            display_signal, display_segments = sb.trim_for_display(
+                signal, segments, config.FS,
+            )
+
             segments_info = []
-            for seg, assess, ch_preds in zip(segments, assessments, channel_preds):
+            for seg, disp_seg, assess, ch_preds in zip(
+                segments, display_segments, assessments, channel_preds,
+            ):
                 segments_info.append({
-                    "start": round(seg.start_sample / config.FS, 3),
-                    "end": round(seg.end_sample / config.FS, 3),
+                    "start": round(disp_seg.start_sample / config.FS, 3),
+                    "end": round(disp_seg.end_sample / config.FS, 3),
                     "label": f"{seg.mvc}%",
                     "isPostFatigue": sb.is_post_fatigue(seg.file.condition),
                     "rms": round(float(assess.rms), 4),
@@ -147,9 +158,9 @@ def _render_realtime_tab() -> None:
                 for r in results
             ]
 
-            total_sec = len(signal) / config.FS
+            total_sec = len(display_signal) / config.FS
             st.session_state["_rt_html"] = rth.build_realtime_html(
-                signal, segments_info, config.FS,
+                display_signal, segments_info, config.FS,
                 channel_layout=config.CHANNEL_LAYOUT,
                 display_window_sec=DISPLAY_WINDOW_SEC,
                 playback_duration_sec=total_sec,

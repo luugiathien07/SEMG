@@ -9,9 +9,12 @@ from dataclasses import dataclass
 
 import numpy as np
 
+from . import config
 from . import data_loader as dl
 from . import feature_extraction as fe
 from . import inference as inf
+from . import mfcv as mfcv_mod
+from . import session_builder as sb
 from .evaluate import ModelResult
 from .session_builder import SegmentInfo
 
@@ -167,3 +170,30 @@ def assess_channel_grid(
             grid[ch] = preds[0]["pred"] if preds else None
         out.append(grid)
     return out
+
+
+def compute_cv_series(subject: int) -> list[dict]:
+    """Real MFCV(t) series for the realtime trend chart, computed on
+    electrode column 1 (channels 64->63->...->52, `config.CHANNEL_LAYOUT`
+    column index 0) — the column already validated as monotonic
+    pre-innervation-zone (R²=0.994) in
+    docs/09-so-do-kenh-va-mfcv.md section 9.2.5.
+
+    Uses win_ms=1000, hop_ms=500 to match `realtime_html._compute_trend`'s
+    RMS/MDF grid (step_sec=0.5, window_sec=1.0) exactly, so all three trend
+    lines can share one x-axis. Entries where the abstention gate rejects
+    the window have `cv_ms=None, accepted=False` — the frontend draws a gap
+    there instead of interpolating through it.
+    """
+    physical_channels = [row[0] for row in config.CHANNEL_LAYOUT]
+    col_signal, _ = sb.build_session_column(subject, physical_channels)
+
+    cfg = mfcv_mod.GridConfig(fs=float(config.FS))
+    gate = mfcv_mod.QualityGate()
+    results = mfcv_mod.mfcv_timeseries(
+        col_signal, cfg, gate, win_ms=1000.0, hop_ms=500.0,
+    )
+    return [
+        {"t_s": r.t_s, "cv_ms": r.cv_ms, "accepted": bool(r.accepted)}
+        for r in results
+    ]

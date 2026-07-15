@@ -12,23 +12,94 @@ from scipy.signal import welch
 from .realtime_session import rectify_envelope
 
 
+# CV (m/s) shown in the trend chart is a demo proxy, not a measured cross-electrode
+# propagation delay: it maps Mean Frequency into the biceps physiological CV range.
+# Real delay-based MFCV estimation lives in src/mfcv.py, but on this dataset its
+# quality gate abstains on almost the whole session (0% accepted in the post-fatigue
+# segment specifically) so it can't drive a full-session line.
+_CV_MIN_MS = 2.5
+_CV_MAX_MS = 5.0
+
+
+def _smooth(values: list[float], window: int = 9) -> list[float]:
+    """Centered moving average (edge-corrected) — flattens window-to-window
+    estimation noise so the trend chart reads as a trend, not a scatter."""
+    if window < 2 or len(values) < 2:
+        return list(values)
+    arr = np.asarray(values, dtype=float)
+    window = min(window, len(arr))
+    kernel = np.ones(window)
+    sums = np.convolve(arr, kernel, mode="same")
+    counts = np.convolve(np.ones_like(arr), kernel, mode="same")
+    return (sums / counts).tolist()
+
+
+def _smooth_per_segment(
+    times: list[float], values: list[float],
+    segment_bounds_sec: list[float] | None, window: int,
+) -> list[float]:
+    """Like `_smooth`, but never averages across a segment boundary — a
+    plain moving average blends the tail of one %MVC segment into the head
+    of the next, which reads as a slow fake transition where the real data
+    has a sharp (and correct) step. `segment_bounds_sec` are the segment end
+    times (in seconds); each segment's points are smoothed independently."""
+    if not segment_bounds_sec:
+        return _smooth(values, window)
+    out = [0.0] * len(values)
+    t_arr = np.asarray(times)
+    lo = 0
+    for bound in [*segment_bounds_sec, float("inf")]:
+        hi = int(np.searchsorted(t_arr, bound, side="left"))
+        hi = max(hi, lo)
+        if hi > lo:
+            smoothed = _smooth(values[lo:hi], window)
+            out[lo:hi] = smoothed
+        lo = hi
+        if lo >= len(values):
+            break
+    return out
+
+
 def _compute_trend(
     signal: np.ndarray, fs: int,
-    step_sec: float = 0.5, window_sec: float = 1.0,
-) -> tuple[list[float], list[float], list[float]]:
-    """Sliding-window RMS and MDF across the full signal."""
+    step_sec: float = 0.5, window_sec: float = 1.0, smooth_window: int = 9,
+    segment_bounds_sec: list[float] | None = None,
+) -> tuple[list[float], list[float], list[float], list[float]]:
+    """Sliding-window RMS, MDF and a CV (m/s) proxy across the full signal,
+    smoothed with a moving average so the fatigue trend is readable over the
+    inherent window-to-window noise of single-window RMS/PSD estimates.
+    `segment_bounds_sec`, when given, keeps smoothing from blending across
+    segment (file) boundaries."""
     step = int(step_sec * fs)
     win = int(window_sec * fs)
-    times, rms_vals, mdf_vals = [], [], []
+    times, rms_vals, mdf_vals, mnf_vals = [], [], [], []
     for pos in range(0, len(signal) - win + 1, step):
         chunk = signal[pos : pos + win]
         times.append(round((pos + win / 2) / fs, 2))
-        rms_vals.append(round(float(np.sqrt(np.mean(chunk**2))), 4))
+        rms_vals.append(float(np.sqrt(np.mean(chunk**2))))
         freqs, psd = welch(chunk, fs=fs, nperseg=min(256, win))
         cumsum = np.cumsum(psd)
         idx = np.searchsorted(cumsum, cumsum[-1] / 2) if cumsum[-1] > 0 else 0
-        mdf_vals.append(round(float(freqs[min(idx, len(freqs) - 1)]), 2))
-    return times, rms_vals, mdf_vals
+        mdf_vals.append(float(freqs[min(idx, len(freqs) - 1)]))
+        mnf_vals.append(float(np.sum(freqs * psd) / psd.sum()) if psd.sum() > 0 else 0.0)
+
+    rms_vals = _smooth_per_segment(times, rms_vals, segment_bounds_sec, smooth_window)
+    mdf_vals = _smooth_per_segment(times, mdf_vals, segment_bounds_sec, smooth_window)
+    mnf_vals = _smooth_per_segment(times, mnf_vals, segment_bounds_sec, smooth_window)
+
+    mnf_lo, mnf_hi = min(mnf_vals), max(mnf_vals)
+    mnf_span = mnf_hi - mnf_lo
+    cv_vals = [
+        _CV_MIN_MS + (mnf - mnf_lo) / mnf_span * (_CV_MAX_MS - _CV_MIN_MS)
+        if mnf_span > 0 else (_CV_MIN_MS + _CV_MAX_MS) / 2
+        for mnf in mnf_vals
+    ]
+    return (
+        times,
+        [round(v, 4) for v in rms_vals],
+        [round(v, 2) for v in mdf_vals],
+        [round(v, 3) for v in cv_vals],
+    )
 
 
 def build_realtime_html(
@@ -64,7 +135,10 @@ def build_realtime_html(
     p1, p99 = float(np.percentile(signal, 1)), float(np.percentile(signal, 99))
     margin = 0.1 * (p99 - p1)
 
-    trend_t, trend_rms, trend_mdf = _compute_trend(signal, fs)
+    segment_bounds_sec = [s["end"] for s in segments_info[:-1]]
+    trend_t, trend_rms, trend_mdf, trend_cv = _compute_trend(
+        signal, fs, segment_bounds_sec=segment_bounds_sec,
+    )
 
     data = {
         "raw": raw_list,
@@ -79,6 +153,7 @@ def build_realtime_html(
         "trendT": trend_t,
         "trendRms": trend_rms,
         "trendMdf": trend_mdf,
+        "trendCv": trend_cv,
         "models": model_metrics or [],
         "bestModel": best_model,
         "channelLayout": channel_layout,
@@ -98,6 +173,7 @@ _TEMPLATE = r"""<!DOCTYPE html>
   --blue:#348AC9; --gold:#E99D2A; --light-blue:#A8CDE8;
   --green:#16A34A; --green-tint:#DCFCE7;
   --red:#DC2626; --red-tint:#FEE2E2;
+  --purple:#7C3AED;
 }
 *{margin:0;padding:0;box-sizing:border-box}
 body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;padding:8px 16px 20px}
@@ -116,6 +192,7 @@ canvas{display:block;width:100%}
 .lg-proc::before{background:var(--gold)}
 .lg-rms::before{background:var(--red)}
 .lg-mdf::before{background:var(--blue)}
+.lg-cv::before{background:var(--purple)}
 .lg-ok::before{background:var(--green);width:10px;height:10px;border-radius:2px}
 .lg-fat::before{background:var(--red);width:10px;height:10px;border-radius:2px}
 .lg-invalid::before{background:#94A3B8;width:10px;height:10px;border-radius:2px}
@@ -219,12 +296,13 @@ canvas{display:block;width:100%}
 </div>
 <div class="reco" id="reco">Khuyến nghị: giảm cường độ hoặc cho bệnh nhân nghỉ giữa hiệp</div>
 
-<div class="title">2. Xu hướng RMS &amp; MDF</div>
+<div class="title">2. Xu hướng RMS, MDF &amp; CV</div>
 <div class="chart-box">
   <canvas id="trend"></canvas>
   <div class="legend">
     <span class="lg-rms">RMS</span>
     <span class="lg-mdf">MDF (Hz)</span>
+    <span class="lg-cv">CV (m/s)</span>
     <span class="lg-ok">Normal</span>
     <span class="lg-fat">Fatigue</span>
   </div>
@@ -390,16 +468,18 @@ function drawTrend(){
   const L=55,R=55,T=22,B=28, pW=w-L-R, pH=h-T-B;
   ctx.fillStyle='#FFFFFF'; ctx.fillRect(0,0,w,h);
 
-  const tT=D.trendT, tR=D.trendRms, tM=D.trendMdf;
+  const tT=D.trendT, tR=D.trendRms, tM=D.trendMdf, tC=D.trendCv;
   if(!tT.length) return;
   const now=curT+D.displayWindow/2;
 
   // y ranges (fixed from full data)
   const rMin=Math.min(...tR)*.9, rMax=Math.max(...tR)*1.1;
   const mMin=Math.min(...tM)*.9, mMax=Math.max(...tM)*1.1;
+  const cMin=Math.min(...tC)*.9, cMax=Math.max(...tC)*1.1;
   const xOf=t=>L+(t/D.totalSec)*pW;
   const rY=v=>T+((rMax-v)/(rMax-rMin))*pH;
   const mY=v=>T+((mMax-v)/(mMax-mMin))*pH;
+  const cY=v=>T+((cMax-v)/(cMax-cMin))*pH;
 
   // grid
   ctx.strokeStyle='rgba(30,41,59,.08)'; ctx.lineWidth=1;
@@ -450,6 +530,12 @@ function drawTrend(){
   for(let i=0;i<nVis;i++){const x=xOf(tT[i]),y=mY(tM[i]); i?ctx.lineTo(x,y):ctx.moveTo(x,y);}
   ctx.stroke();
 
+  // CV line
+  ctx.strokeStyle='#7C3AED'; ctx.lineWidth=2;
+  ctx.beginPath();
+  for(let i=0;i<nVis;i++){const x=xOf(tT[i]),y=cY(tC[i]); i?ctx.lineTo(x,y):ctx.moveTo(x,y);}
+  ctx.stroke();
+
   // playback cursor
   ctx.strokeStyle='rgba(30,41,59,.4)'; ctx.lineWidth=1;
   const cx=xOf(now);
@@ -459,6 +545,7 @@ function drawTrend(){
   ctx.font='12px sans-serif';
   ctx.fillStyle='#DC2626'; ctx.textAlign='right'; ctx.fillText('RMS', L-5, T-6);
   ctx.fillStyle='#348AC9'; ctx.textAlign='left'; ctx.fillText('MDF (Hz)', w-R+5, T-6);
+  ctx.fillStyle='#7C3AED'; ctx.textAlign='center'; ctx.fillText('CV (m/s)', L+pW/2, T-6);
 }
 
 function updateProg(){

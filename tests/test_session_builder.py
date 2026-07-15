@@ -7,7 +7,8 @@ import pytest
 from src import data_loader as dl
 from src.session_builder import (
     parse_mvc, is_post_fatigue, list_ordered_segments, common_valid_channels,
-    build_session_signal, build_session_signal_avg,
+    build_session_signal, build_session_signal_avg, build_session_column, trim_for_display,
+    SegmentInfo,
 )
 
 
@@ -137,3 +138,100 @@ class TestBuildSessionSignalAvg:
         monkeypatch.setattr(dl, "list_files", lambda: files)
         with pytest.raises(ValueError):
             build_session_signal_avg(9)
+
+
+class TestTrimForDisplay:
+    FS = 100  # small fs keeps the synthetic arrays short and readable
+
+    def _seg(self, condition: str, start: int, end: int) -> SegmentInfo:
+        return SegmentInfo(
+            file=_fake_file(9, condition, 0), mvc=parse_mvc(condition),
+            start_sample=start, end_sample=end,
+        )
+
+    def test_trims_ramp_in_and_ramp_out(self):
+        fs = self.FS
+        # 1s near-silent ramp-in + 3s loud plateau + 1s near-silent ramp-out.
+        ramp = np.full(fs, 0.01)
+        plateau = np.full(3 * fs, 1.0)
+        x = np.concatenate([ramp, plateau, ramp])
+        segments = [self._seg("60", 0, len(x))]
+
+        trimmed, new_segments = trim_for_display(x, segments, fs)
+
+        assert len(trimmed) < len(x)
+        # plateau (all 1.0) must survive the trim
+        assert np.all(trimmed[new_segments[0].start_sample:new_segments[0].end_sample] > 0)
+        assert trimmed.max() == pytest.approx(1.0)
+        assert new_segments[0].file.condition == "60"
+        assert new_segments[0].mvc == 60
+
+    def test_flat_segment_is_not_trimmed(self):
+        fs = self.FS
+        x = np.full(2 * fs, 0.5)
+        segments = [self._seg("10", 0, len(x))]
+
+        trimmed, new_segments = trim_for_display(x, segments, fs)
+
+        np.testing.assert_allclose(trimmed, x)
+        assert new_segments[0].start_sample == 0
+        assert new_segments[0].end_sample == len(x)
+
+    def test_segment_shorter_than_one_chunk_does_not_crash(self):
+        fs = self.FS
+        x = np.array([0.1, 0.2, 0.3])
+        segments = [self._seg("10", 0, len(x))]
+
+        trimmed, new_segments = trim_for_display(x, segments, fs)
+
+        np.testing.assert_allclose(trimmed, x)
+        assert new_segments[0].end_sample - new_segments[0].start_sample == len(x)
+
+    def test_concatenated_segments_have_contiguous_bounds(self):
+        fs = self.FS
+        ramp = np.full(fs, 0.01)
+        plateau = np.full(2 * fs, 1.0)
+        seg_a = np.concatenate([ramp, plateau, ramp])
+        seg_b = np.concatenate([ramp, plateau * 2, ramp])
+        x = np.concatenate([seg_a, seg_b])
+        segments = [
+            self._seg("60", 0, len(seg_a)),
+            self._seg("70", len(seg_a), len(seg_a) + len(seg_b)),
+        ]
+
+        trimmed, new_segments = trim_for_display(x, segments, fs)
+
+        assert new_segments[0].start_sample == 0
+        assert new_segments[0].end_sample == new_segments[1].start_sample
+        assert new_segments[1].end_sample == len(trimmed)
+
+
+class TestBuildSessionColumn:
+    def test_returns_matrix_shaped_by_requested_channels(self, monkeypatch):
+        f1 = dl.FileInfo(path=Path("Sujet_9_10_emg.csv"), subject=9, condition="10", label=0)
+        f2 = dl.FileInfo(path=Path("Sujet_9_20_emg.csv"), subject=9, condition="20", label=0)
+        monkeypatch.setattr(
+            "src.session_builder.dl.list_files", lambda: [f1, f2])
+        fake_channels = {
+            f1.path: np.arange(300).reshape(100, 3).astype(float),
+            f2.path: np.arange(300, 600).reshape(100, 3).astype(float),
+        }
+        monkeypatch.setattr(
+            "src.session_builder.dl.load_channels", lambda p: fake_channels[p])
+
+        signal, segments = build_session_column(9, physical_channels=[1, 3])
+
+        assert signal.shape == (2, 200)  # 2 requested channels, 100+100 samples
+        assert len(segments) == 2
+        assert segments[0].start_sample == 0 and segments[0].end_sample == 100
+        assert segments[1].start_sample == 100 and segments[1].end_sample == 200
+        # physical channel 1 -> array index 0; verify it's really column 0, not 1
+        expected_first_col = fake_channels[f1.path][:, 0]
+        np.testing.assert_array_equal(signal[0, :100], expected_first_col)
+
+    def test_raises_on_fewer_than_two_files(self, monkeypatch):
+        f1 = dl.FileInfo(path=Path("Sujet_9_10_emg.csv"), subject=9, condition="10", label=0)
+        monkeypatch.setattr(
+            "src.session_builder.dl.list_files", lambda: [f1])
+        with pytest.raises(ValueError):
+            build_session_column(9, physical_channels=[1, 2])

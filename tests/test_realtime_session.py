@@ -260,3 +260,26 @@ class TestAssessChannelGrid:
             # file, and not in valid_channels) must also be None
             assert entry[3] is None
             assert entry[63] is None
+
+
+from src.realtime_session import compute_cv_series
+
+
+class TestComputeCvSeries:
+    def test_returns_list_of_dicts_with_expected_keys(self, monkeypatch):
+        rng = np.random.default_rng(20)
+        fake_column = rng.standard_normal((13, 6000)) * 0.05
+        f1 = dl.FileInfo(path=Path("Sujet_9_10_emg.csv"), subject=9, condition="10", label=0)
+        fake_segments = [
+            SegmentInfo(file=f1, mvc=10, start_sample=0, end_sample=3000),
+        ]
+        monkeypatch.setattr(
+            "src.realtime_session.sb.build_session_column",
+            lambda subject, physical_channels: (fake_column, fake_segments),
+        )
+        series = compute_cv_series(subject=9)
+        assert isinstance(series, list)
+        assert len(series) > 0
+        for entry in series:
+            assert set(entry.keys()) == {"t_s", "cv_ms", "accepted"}
+            assert isinstance(entry["accepted"], bool)

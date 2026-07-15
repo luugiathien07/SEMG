@@ -1,7 +1,7 @@
 """Tests for src/realtime_html — client-side Canvas2D animation component."""
 import numpy as np
 
-from src.realtime_html import build_realtime_html
+from src.realtime_html import _CV_MAX_MS, _CV_MIN_MS, _compute_trend, build_realtime_html
 
 
 def _fake_segments(fs=2000):
@@ -66,3 +66,42 @@ def test_channel_map_canvas_and_draw_function_present():
     html = build_realtime_html(signal, _fake_segments(), fs=2000, channel_layout=_FAKE_LAYOUT)
     assert 'id="chmap"' in html
     assert "drawChannelMap" in html
+
+
+def test_trend_cv_embedded_as_json():
+    signal = np.random.default_rng(1).standard_normal(6000) * 0.1
+    html = build_realtime_html(signal, _fake_segments(), fs=2000, channel_layout=_FAKE_LAYOUT)
+    assert '"trendCv"' in html
+
+
+def test_compute_trend_cv_within_physiological_range():
+    signal = np.random.default_rng(2).standard_normal(20000) * 0.1
+    times, rms_vals, mdf_vals, cv_vals = _compute_trend(signal, fs=2000)
+    assert len(cv_vals) == len(times) == len(rms_vals) == len(mdf_vals)
+    assert all(_CV_MIN_MS <= cv <= _CV_MAX_MS for cv in cv_vals)
+
+
+def test_compute_trend_cv_constant_signal_no_crash():
+    signal = np.zeros(6000)
+    times, rms_vals, mdf_vals, cv_vals = _compute_trend(signal, fs=2000)
+    assert len(cv_vals) == len(times)
+    assert all(_CV_MIN_MS <= cv <= _CV_MAX_MS for cv in cv_vals)
+
+
+def test_segment_bounds_prevent_smoothing_bleed_across_boundary():
+    fs = 2000
+    rng = np.random.default_rng(3)
+    low = rng.standard_normal(20 * fs) * 0.05
+    high = rng.standard_normal(20 * fs) * 1.0
+    signal = np.concatenate([low, high])
+
+    times, rms_unbounded, _, _ = _compute_trend(signal, fs)
+    _, rms_bounded, _, _ = _compute_trend(signal, fs, segment_bounds_sec=[20.0])
+
+    times = np.asarray(times)
+    # First trend point comfortably inside the high segment: with global
+    # smoothing its moving average still straddles the boundary and drags the
+    # value down toward the low segment; per-segment smoothing should not.
+    idx = int(np.searchsorted(times, 20.5))
+    assert rms_bounded[idx] > rms_unbounded[idx]
+    assert rms_bounded[idx] > 0.5  # close to the high segment's own RMS (~1.0)

@@ -21,6 +21,8 @@
     --green-soft: rgba(111,207,151,0.14);
     --rose: #ec6a80;
     --rose-soft: rgba(236,106,128,0.14);
+    --violet: #a78bfa;
+    --violet-soft: rgba(167,139,250,0.14);
     --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
     --mono: ui-monospace, "SF Mono", "JetBrains Mono", "Cascadia Code", Menlo, Consolas, monospace;
   }
@@ -36,6 +38,7 @@
       --cyan: #0d8f88; --cyan-soft: rgba(13,143,136,0.10);
       --green: #1f9457; --green-soft: rgba(31,148,87,0.10);
       --rose: #c93a58; --rose-soft: rgba(201,58,88,0.10);
+      --violet: #7c3aed; --violet-soft: rgba(124,58,237,0.10);
     }
   }
   :root[data-theme="dark"]{
@@ -46,6 +49,7 @@
     --cyan: #5cd3ce; --cyan-soft: rgba(92,211,206,0.14);
     --green: #6fcf97; --green-soft: rgba(111,207,151,0.14);
     --rose: #ec6a80; --rose-soft: rgba(236,106,128,0.14);
+    --violet: #a78bfa; --violet-soft: rgba(167,139,250,0.14);
   }
   :root[data-theme="light"]{
     --bg: #f4f6f9; --panel: #ffffff; --panel-line: #dde4ec;
@@ -55,6 +59,7 @@
     --cyan: #0d8f88; --cyan-soft: rgba(13,143,136,0.10);
     --green: #1f9457; --green-soft: rgba(31,148,87,0.10);
     --rose: #c93a58; --rose-soft: rgba(201,58,88,0.10);
+    --violet: #7c3aed; --violet-soft: rgba(124,58,237,0.10);
   }
 
   *{box-sizing:border-box}
@@ -118,12 +123,14 @@
   .term .expl{font-size:13.5px;color:var(--ink-soft);line-height:1.55}
   .term.dom-time .name{color:var(--amber)}
   .term.dom-freq .name{color:var(--cyan)}
+  .term.dom-cv .name{color:var(--violet)}
   .term.dom-state .name{color:var(--ink)}
   .badge{display:inline-block;font-family:var(--sans);font-weight:700;font-size:11px;
     letter-spacing:.02em;padding:2px 8px;
     border-radius:20px;margin-left:8px;vertical-align:middle}
   .badge.time{background:var(--amber-soft);color:var(--amber)}
   .badge.freq{background:var(--cyan-soft);color:var(--cyan)}
+  .badge.cv{background:var(--violet-soft);color:var(--violet)}
   .pill{display:inline-flex;align-items:center;gap:6px;font-family:var(--sans);
     font-size:12px;padding:2px 9px;border-radius:20px;font-weight:700}
   .pill.ok{background:var(--green-soft);color:var(--green)}
@@ -196,9 +203,10 @@
     <div class="eyebrow"><span class="dot"></span>Thuật ngữ xuất hiện trong demo</div>
     <h1>Đọc hiểu các chỉ số trên màn hình demo</h1>
     <p class="lede">Mỗi thuật ngữ dưới đây gắn với đúng con số / vùng bạn sẽ thấy khi buổi tập
-      chạy — màu <span class="badge time">miền thời gian</span> và
-      <span class="badge freq">miền tần số</span> khớp với 2 đường trong biểu đồ
-      "Xu hướng RMS &amp; MDF" của demo.</p>
+      chạy — màu <span class="badge time">miền thời gian</span>,
+      <span class="badge freq">miền tần số</span> và
+      <span class="badge cv">tốc độ dẫn truyền</span> khớp với 3 đường trong biểu đồ
+      "Xu hướng RMS, MDF &amp; CV" của demo.</p>
 
     <div class="glossary">
       <div class="term dom-time">
@@ -212,6 +220,13 @@
         <div class="full">Median Frequency</div>
         <div class="expl">"Tín hiệu dao động nhanh hay chậm." Khi mỏi, tốc độ dẫn truyền thần
           kinh–cơ chậm lại → tần số trung vị giảm dần.</div>
+      </div>
+      <div class="term dom-cv">
+        <div class="name ascii">CV <span class="badge cv">tốc độ dẫn truyền</span></div>
+        <div class="full">Conduction Velocity (m/s)</div>
+        <div class="expl">"Tín hiệu điện lan dọc sợi cơ nhanh hay chậm." Khi mỏi, tốc độ dẫn
+          truyền giảm dần — ước tính từ tần số trung bình phổ tín hiệu, quy đổi về dải sinh lý
+          của cơ nhị đầu tay (~2.5–5 m/s).</div>
       </div>
       <div class="term dom-time">
         <div class="name ascii">%MVC</div>

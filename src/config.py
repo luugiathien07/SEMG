@@ -87,3 +87,18 @@ PAPER_REFERENCE = {
     "KNN_F1": 0.9541,
     "KNN_AUC": 0.95,
 }
+
+# --- Quality control thresholds (bước 3: cổng abstention) ------------------
+# Clipping (bão hoà): N mẫu liên tiếp trở lên "dính" gần cực trị của chính
+# tín hiệu đó (không biết ngưỡng ADC thật của thiết bị nên dùng ngưỡng
+# tương đối). Nếu tổng tỉ lệ mẫu nằm trong các đoạn đó vượt ngưỡng -> fail.
+QC_CLIP_MIN_RUN = 5          # số mẫu liên tiếp tối thiểu để tính là 1 đoạn bão hoà
+QC_CLIP_MAX_FRAC = 0.01      # >1% tổng số mẫu nằm trong đoạn bão hoà -> QC fail
+
+# Dropout (mất tín hiệu / flat-line giữa file, khác kiểm tra "toàn file = 0"
+# đã có ở data_loader.valid_channel_mask): đoạn có độ lệch chuẩn cục bộ thấp
+# hơn hẳn độ lệch chuẩn toàn tín hiệu, kéo dài đủ lâu.
+QC_DROPOUT_WINDOW = 100      # cỡ cửa sổ trượt tính std cục bộ (mẫu, 50ms @ 2000Hz)
+QC_DROPOUT_STD_FRAC = 0.02   # std cục bộ < 2% std toàn tín hiệu -> coi là "phẳng"
+QC_DROPOUT_MIN_RUN = 100     # số mẫu liên tiếp "phẳng" tối thiểu để tính là dropout
+QC_DROPOUT_MAX_FRAC = 0.05   # >5% tổng số mẫu nằm trong đoạn dropout -> QC fail
