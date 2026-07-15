@@ -23,3 +23,5 @@ docs/superpowers/
 .superpowers/
 
 scenario01_sub50/
+
+web-ui/node_modules/
