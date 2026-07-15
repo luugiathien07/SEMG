@@ -6,6 +6,7 @@ import pytest
 
 from src import config as cfg
 from src import data_loader as dl
+from src import mfcv as mfcv_mod
 from src.evaluate import ModelResult
 from src.session_builder import SegmentInfo
 from src.realtime_session import (
@@ -265,21 +266,72 @@ class TestAssessChannelGrid:
 from src.realtime_session import compute_cv_series
 
 
+def _fake_channels(n_time: int, seed: int) -> np.ndarray:
+    return np.random.default_rng(seed).standard_normal((n_time, 64)) * 0.05
+
+
 class TestComputeCvSeries:
     def test_returns_list_of_dicts_with_expected_keys(self, monkeypatch):
-        rng = np.random.default_rng(20)
-        fake_column = rng.standard_normal((13, 6000)) * 0.05
         f1 = dl.FileInfo(path=Path("Sujet_9_10_emg.csv"), subject=9, condition="10", label=0)
-        fake_segments = [
-            SegmentInfo(file=f1, mvc=10, start_sample=0, end_sample=3000),
-        ]
+        f2 = dl.FileInfo(path=Path("Sujet_9_20_emg.csv"), subject=9, condition="20", label=0)
+        fake_channels = {f1.path: _fake_channels(3000, 20), f2.path: _fake_channels(3000, 21)}
         monkeypatch.setattr(
-            "src.realtime_session.sb.build_session_column",
-            lambda subject, physical_channels: (fake_column, fake_segments),
-        )
+            "src.realtime_session.sb.list_ordered_segments", lambda subject: [f1, f2])
+        monkeypatch.setattr(
+            "src.realtime_session.dl.load_channels", lambda path: fake_channels[path])
+
         series = compute_cv_series(subject=9)
         assert isinstance(series, list)
         assert len(series) > 0
         for entry in series:
             assert set(entry.keys()) == {"t_s", "cv_ms", "accepted"}
             assert isinstance(entry["accepted"], bool)
+
+    def test_raises_on_fewer_than_two_files(self, monkeypatch):
+        f1 = dl.FileInfo(path=Path("Sujet_9_10_emg.csv"), subject=9, condition="10", label=0)
+        monkeypatch.setattr(
+            "src.realtime_session.sb.list_ordered_segments", lambda subject: [f1])
+        with pytest.raises(ValueError):
+            compute_cv_series(subject=9)
+
+    def test_trim_bounds_puts_series_on_trimmed_timeline(self, monkeypatch):
+        f1 = dl.FileInfo(path=Path("Sujet_9_10_emg.csv"), subject=9, condition="10", label=0)
+        f2 = dl.FileInfo(path=Path("Sujet_9_20_emg.csv"), subject=9, condition="20", label=0)
+        fake_channels = {f1.path: _fake_channels(2000, 22), f2.path: _fake_channels(2000, 23)}
+        monkeypatch.setattr(
+            "src.realtime_session.sb.list_ordered_segments", lambda subject: [f1, f2])
+        monkeypatch.setattr(
+            "src.realtime_session.dl.load_channels", lambda path: fake_channels[path])
+        # Trim 500 samples off the front of each 2000-sample file ->
+        # trimmed total = (2000-500)*2 = 3000 samples = 1.5s @ fs=2000.
+        trim_bounds = [(500, 2000), (500, 2000)]
+
+        series = compute_cv_series(subject=9, trim_bounds=trim_bounds)
+
+        assert isinstance(series, list)
+        assert len(series) > 0
+        assert all(e["t_s"] <= 1.5 for e in series)
+
+    def test_uses_unmodified_quality_gate_defaults(self, monkeypatch):
+        """The abstention gate must not be relaxed for the demo — it's a
+        deliberate product differentiator, not a coverage knob."""
+        f1 = dl.FileInfo(path=Path("Sujet_9_10_emg.csv"), subject=9, condition="10", label=0)
+        f2 = dl.FileInfo(path=Path("Sujet_9_20_emg.csv"), subject=9, condition="20", label=0)
+        fake_channels = {f1.path: _fake_channels(3000, 24), f2.path: _fake_channels(3000, 25)}
+        monkeypatch.setattr(
+            "src.realtime_session.sb.list_ordered_segments", lambda subject: [f1, f2])
+        monkeypatch.setattr(
+            "src.realtime_session.dl.load_channels", lambda path: fake_channels[path])
+        captured = {}
+        real_gate_cls = mfcv_mod.QualityGate
+
+        def recording_gate(*args, **kwargs):
+            gate = real_gate_cls(*args, **kwargs)
+            captured["gate"] = gate
+            return gate
+
+        monkeypatch.setattr("src.realtime_session.mfcv_mod.QualityGate", recording_gate)
+
+        compute_cv_series(subject=9)
+
+        assert captured["gate"].min_corr == real_gate_cls().min_corr == 0.75

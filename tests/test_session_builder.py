@@ -8,7 +8,7 @@ from src import data_loader as dl
 from src.session_builder import (
     parse_mvc, is_post_fatigue, list_ordered_segments, common_valid_channels,
     build_session_signal, build_session_signal_avg, build_session_column, trim_for_display,
-    SegmentInfo,
+    trim_bounds_for_display, SegmentInfo,
 )
 
 
@@ -204,6 +204,55 @@ class TestTrimForDisplay:
         assert new_segments[0].start_sample == 0
         assert new_segments[0].end_sample == new_segments[1].start_sample
         assert new_segments[1].end_sample == len(trimmed)
+
+
+class TestTrimBoundsForDisplay:
+    FS = 100
+
+    def _seg(self, condition: str, start: int, end: int) -> SegmentInfo:
+        return SegmentInfo(
+            file=_fake_file(9, condition, 0), mvc=parse_mvc(condition),
+            start_sample=start, end_sample=end,
+        )
+
+    def test_bounds_reproduce_trim_for_display_lengths(self):
+        """trim_for_display must be exactly reproducible from
+        trim_bounds_for_display's bounds — this is what lets a second
+        signal aligned to the same segments (the MFCV electrode column)
+        be trimmed identically, keeping every trend line on one time
+        axis."""
+        fs = self.FS
+        ramp = np.full(fs, 0.01)
+        plateau_a = np.full(2 * fs, 1.0)
+        plateau_b = np.full(2 * fs, 2.0)
+        seg_a = np.concatenate([ramp, plateau_a, ramp])
+        seg_b = np.concatenate([ramp, plateau_b, ramp])
+        x = np.concatenate([seg_a, seg_b])
+        segments = [
+            self._seg("60", 0, len(seg_a)),
+            self._seg("70", len(seg_a), len(seg_a) + len(seg_b)),
+        ]
+
+        trimmed, new_segments = trim_for_display(x, segments, fs)
+        bounds = trim_bounds_for_display(x, segments, fs)
+
+        assert len(bounds) == len(segments)
+        rebuilt = np.concatenate([
+            x[seg.start_sample:seg.end_sample][start:end]
+            for seg, (start, end) in zip(segments, bounds)
+        ])
+        np.testing.assert_array_equal(rebuilt, trimmed)
+        for seg, new_seg, (start, end) in zip(segments, new_segments, bounds):
+            assert new_seg.end_sample - new_seg.start_sample == end - start
+
+    def test_flat_segment_keeps_full_bounds(self):
+        fs = self.FS
+        x = np.full(2 * fs, 0.5)
+        segments = [self._seg("10", 0, len(x))]
+
+        bounds = trim_bounds_for_display(x, segments, fs)
+
+        assert bounds == [(0, len(x))]
 
 
 class TestBuildSessionColumn:

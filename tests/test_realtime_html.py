@@ -1,7 +1,7 @@
 """Tests for src/realtime_html — client-side Canvas2D animation component."""
 import numpy as np
 
-from src.realtime_html import _CV_MAX_MS, _CV_MIN_MS, _compute_trend, build_realtime_html
+from src.realtime_html import _compute_trend, build_realtime_html
 
 
 def _fake_segments(fs=2000):
@@ -68,24 +68,46 @@ def test_channel_map_canvas_and_draw_function_present():
     assert "drawChannelMap" in html
 
 
-def test_trend_cv_embedded_as_json():
+def test_compute_trend_returns_rms_and_mdf_only():
+    signal = np.random.default_rng(2).standard_normal(20000) * 0.1
+    times, rms_vals, mdf_vals = _compute_trend(signal, fs=2000)
+    assert len(rms_vals) == len(times) == len(mdf_vals)
+
+
+def test_cv_series_embedded_as_json():
+    signal = np.random.default_rng(1).standard_normal(6000) * 0.1
+    cv_series = [
+        {"t_s": 0.5, "cv_ms": 4.2, "accepted": True},
+        {"t_s": 1.0, "cv_ms": None, "accepted": False},
+    ]
+    html = build_realtime_html(
+        signal, _fake_segments(), fs=2000, channel_layout=_FAKE_LAYOUT,
+        cv_series=cv_series,
+    )
+    assert '"trendCvT"' in html
+    assert '"trendCv"' in html
+    assert '"trendCvAccepted"' in html
+    assert "4.2" in html
+
+
+def test_trend_chart_labels_the_velocity_line_mfcv_not_cv():
+    """The trend chart's third line is muscle fiber conduction velocity —
+    labeled 'MFCV', not the bare 'CV' (which reads as cross-validation
+    elsewhere in this same page, e.g. the model metrics table's 'CV-Acc'
+    column)."""
     signal = np.random.default_rng(1).standard_normal(6000) * 0.1
     html = build_realtime_html(signal, _fake_segments(), fs=2000, channel_layout=_FAKE_LAYOUT)
-    assert '"trendCv"' in html
+    assert "MFCV (m/s)" in html
+    assert "Xu hướng RMS, MDF &amp; MFCV" in html
 
 
-def test_compute_trend_cv_within_physiological_range():
-    signal = np.random.default_rng(2).standard_normal(20000) * 0.1
-    times, rms_vals, mdf_vals, cv_vals = _compute_trend(signal, fs=2000)
-    assert len(cv_vals) == len(times) == len(rms_vals) == len(mdf_vals)
-    assert all(_CV_MIN_MS <= cv <= _CV_MAX_MS for cv in cv_vals)
-
-
-def test_compute_trend_cv_constant_signal_no_crash():
-    signal = np.zeros(6000)
-    times, rms_vals, mdf_vals, cv_vals = _compute_trend(signal, fs=2000)
-    assert len(cv_vals) == len(times)
-    assert all(_CV_MIN_MS <= cv <= _CV_MAX_MS for cv in cv_vals)
+def test_cv_series_none_embeds_empty_arrays():
+    signal = np.random.default_rng(1).standard_normal(6000) * 0.1
+    html = build_realtime_html(
+        signal, _fake_segments(), fs=2000, channel_layout=_FAKE_LAYOUT,
+        cv_series=None,
+    )
+    assert '"trendCvT": []' in html or '"trendCvT":[]' in html
 
 
 def test_segment_bounds_prevent_smoothing_bleed_across_boundary():
@@ -95,8 +117,8 @@ def test_segment_bounds_prevent_smoothing_bleed_across_boundary():
     high = rng.standard_normal(20 * fs) * 1.0
     signal = np.concatenate([low, high])
 
-    times, rms_unbounded, _, _ = _compute_trend(signal, fs)
-    _, rms_bounded, _, _ = _compute_trend(signal, fs, segment_bounds_sec=[20.0])
+    times, rms_unbounded, _ = _compute_trend(signal, fs)
+    _, rms_bounded, _ = _compute_trend(signal, fs, segment_bounds_sec=[20.0])
 
     times = np.asarray(times)
     # First trend point comfortably inside the high segment: with global
@@ -105,3 +127,64 @@ def test_segment_bounds_prevent_smoothing_bleed_across_boundary():
     idx = int(np.searchsorted(times, 20.5))
     assert rms_bounded[idx] > rms_unbounded[idx]
     assert rms_bounded[idx] > 0.5  # close to the high segment's own RMS (~1.0)
+
+
+class TestTrendUsesFilteredSignal:
+    def test_trend_mdf_reflects_filtered_not_raw_signal(self):
+        import json
+
+        from src.signal_processing import filter_signal
+
+        fs = 2000
+        n = 20000
+        t = np.arange(n) / fs
+        rng = np.random.default_rng(7)
+        # Heavy 50Hz mains hum + weak in-band content: the notch filter
+        # should remove most of the 50Hz energy, shifting the median
+        # frequency well away from 50Hz.
+        signal = (
+            5.0 * np.sin(2 * np.pi * 50 * t)
+            + 0.2 * rng.standard_normal(n)
+            + 0.1 * np.sin(2 * np.pi * 120 * t)
+        )
+        segments = _fake_segments()
+        html = build_realtime_html(signal, segments, fs=fs, channel_layout=_FAKE_LAYOUT)
+
+        start = html.index("const D = ") + len("const D = ")
+        end = html.index(";", start)
+        data = json.loads(html[start:end])
+
+        # Same segment_bounds_sec build_realtime_html derives internally
+        # (segment end times except the last), so smoothing matches exactly.
+        bounds = [s["end"] for s in segments[:-1]]
+        _, _, mdf_raw = _compute_trend(signal, fs, segment_bounds_sec=bounds)
+        filtered = filter_signal(signal, fs)
+        _, _, mdf_filt = _compute_trend(filtered, fs, segment_bounds_sec=bounds)
+
+        assert data["trendMdf"] == [round(v, 2) for v in mdf_filt]
+        assert data["trendMdf"] != [round(v, 2) for v in mdf_raw]
+
+
+class TestProcessedLineUsesRealFilter:
+    def test_proc_differs_from_naive_envelope_of_raw(self):
+        import json
+
+        from src.realtime_session import rectify_envelope
+
+        fs = 2000
+        n = 6000
+        t = np.arange(n) / fs
+        signal = 3.0 + np.sin(2 * np.pi * 50 * t) + 0.1 * np.sin(2 * np.pi * 100 * t)
+        html = build_realtime_html(signal, _fake_segments(), fs=fs, channel_layout=_FAKE_LAYOUT)
+
+        # build_realtime_html embeds the JSON payload as `const D = {...};`
+        # (src/realtime_html.py:334) — extract it back out of the HTML.
+        start = html.index("const D = ") + len("const D = ")
+        end = html.index(";", start)
+        data = json.loads(html[start:end])
+
+        naive = rectify_envelope(signal, max(1, int(0.05 * fs)))
+        dec = max(1, fs // 250)
+        naive_dec = [round(float(v), 3) for v in naive[::dec]]
+
+        assert data["proc"] != naive_dec

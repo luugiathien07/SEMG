@@ -71,6 +71,11 @@ def get_channel_preds(subject: int, best_model: str):
     return rts.assess_channel_grid(segments, valid_channels, model_result)
 
 
+@st.cache_data(show_spinner="Đang ước lượng vận tốc dẫn truyền (CV) thật…")
+def get_cv_series(subject: int, trim_bounds: tuple[tuple[int, int], ...]):
+    return rts.compute_cv_series(subject, trim_bounds=list(trim_bounds))
+
+
 def _segment_label(seg) -> str:
     suffix = " (sau mỏi)" if sb.is_post_fatigue(seg.file.condition) else ""
     return f"{seg.mvc}%{suffix}"
@@ -126,9 +131,15 @@ def _render_realtime_tab() -> None:
             # as one continuous session instead of dipping at every %MVC
             # boundary. Classification above already ran on the untrimmed
             # `signal`/`segments`, so predictions are unaffected.
+            trim_bounds = sb.trim_bounds_for_display(signal, segments, config.FS)
             display_signal, display_segments = sb.trim_for_display(
                 signal, segments, config.FS,
             )
+
+            # Real MFCV(t), trimmed with the exact same per-segment bounds
+            # as the waveform/RMS/MDF above so the CV trend line lands on
+            # the same time axis instead of drifting against it.
+            cv_series = get_cv_series(SUBJECT, tuple(trim_bounds))
 
             segments_info = []
             for seg, disp_seg, assess, ch_preds in zip(
@@ -166,6 +177,7 @@ def _render_realtime_tab() -> None:
                 playback_duration_sec=total_sec,
                 model_metrics=model_metrics,
                 best_model=best_model,
+                cv_series=cv_series,
             )
 
         st.iframe(st.session_state["_rt_html"], height="content")

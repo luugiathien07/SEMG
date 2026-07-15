@@ -172,28 +172,127 @@ def assess_channel_grid(
     return out
 
 
-def compute_cv_series(subject: int) -> list[dict]:
-    """Real MFCV(t) series for the realtime trend chart, computed on
-    electrode column 1 (channels 64->63->...->52, `config.CHANNEL_LAYOUT`
-    column index 0) — the column already validated as monotonic
-    pre-innervation-zone (R²=0.994) in
-    docs/09-so-do-kenh-va-mfcv.md section 9.2.5.
+def _mfcv_file_series(
+    channels: np.ndarray, cfg: "mfcv_mod.GridConfig", gate: "mfcv_mod.QualityGate",
+    win_ms: float, hop_ms: float, min_col_accept: float,
+) -> list[dict]:
+    """MFCV(t) for one file's full 64-channel matrix, averaged across the
+    electrode columns of the serpentine grid (`mfcv.serp_grid`) whose
+    window-acceptance ratio reaches `min_col_accept` — same method as the
+    verified reference script (serp.py): a column that mostly abstains is
+    dropped entirely rather than diluting the average with noise.
 
-    Uses win_ms=1000, hop_ms=500 to match `realtime_html._compute_trend`'s
-    RMS/MDF grid (step_sec=0.5, window_sec=1.0) exactly, so all three trend
-    lines can share one x-axis. Entries where the abstention gate rejects
-    the window have `cv_ms=None, accepted=False` — the frontend draws a gap
-    there instead of interpolating through it.
+    Returns one entry per window position on this file's own local time
+    grid: `{"t_s", "cv_ms", "accepted", "sample_pos"}`. `sample_pos` (the
+    window's start sample within this file) is used by the caller to
+    remap onto the session/trimmed timeline; it is not part of the
+    public JSON contract. Windows no qualifying column accepted get
+    `cv_ms=None, accepted=False` — a uniform per-window grid, even though
+    the quadruple-channel method's own acceptance is column-by-column, so
+    the frontend can still draw gaps.
     """
-    physical_channels = [row[0] for row in config.CHANNEL_LAYOUT]
-    col_signal, _ = sb.build_session_column(subject, physical_channels)
+    x = channels.T  # (64, n_time)
+    grid = mfcv_mod.serp_grid(x)  # (13, 5, n_time)
+
+    w = int(win_ms * cfg.fs / 1000)
+    h = int(hop_ms * cfg.fs / 1000)
+    n_time = x.shape[1]
+    starts = list(range(0, n_time - w + 1, h))
+    grid_ts = [round((s + w / 2) / cfg.fs, 3) for s in starts]
+
+    per_t: dict[float, list[float]] = {}
+    for c in range(grid.shape[1]):
+        col = grid[:, c, :]
+        col = col[~np.all(np.isnan(col), axis=1)]
+        if col.shape[0] < 4:
+            continue
+        res = mfcv_mod.mfcv_timeseries_quad(col, cfg, gate, win_ms=win_ms, hop_ms=hop_ms)
+        if not res:
+            continue
+        acc = [r for r in res if r.accepted]
+        if len(acc) / len(res) < min_col_accept:
+            continue
+        for r in acc:
+            per_t.setdefault(r.t_s, []).append(r.cv_ms)
+
+    out = []
+    for t, s in zip(grid_ts, starts):
+        if t in per_t:
+            out.append({"t_s": t, "cv_ms": float(np.mean(per_t[t])),
+                       "accepted": True, "sample_pos": s})
+        else:
+            out.append({"t_s": t, "cv_ms": None, "accepted": False, "sample_pos": s})
+    return out
+
+
+def compute_cv_series(
+    subject: int, trim_bounds: list[tuple[int, int]] | None = None,
+    win_ms: float = 500.0, hop_ms: float = 250.0, min_col_accept: float = 0.5,
+) -> list[dict]:
+    """Real MFCV(t) series for the realtime trend chart — quadruple-channel
+    method (`mfcv.mfcv_timeseries_quad`), averaged across the electrode
+    columns of the serpentine 13x5 grid (`mfcv.serp_grid`, Fig. 1B APSIPA
+    2023) that individually pass a >=50% window-acceptance ratio. This is
+    the method verified against real data (Sujet_7, fatigue_70 file:
+    CV=4.94 m/s, matches the published 4.4-5.1 m/s range).
+    `mfcv.mfcv_timeseries` (the whole-column, single-IZ-detection method)
+    is dead code for this demo — see that function's own docstring.
+
+    Runs per file (`session_builder.list_ordered_segments`), on that
+    file's own full 64-channel matrix, then concatenates. Per-file
+    processing (rather than one big concatenated column) matters for two
+    reasons: `serp_grid` needs all 64 channels, and the rest-activity
+    gate built into `mfcv_timeseries_quad` needs each file's own natural
+    rest/contraction structure to set its baseline — concatenating first
+    would blend different %MVC segments' baselines together.
+
+    Uses `QualityGate()`'s own defaults (min_corr=0.75 etc., Luu et al.
+    2015/APSIPA 2023) unmodified — NOT relaxed for the demo. The
+    abstention gate is a deliberate product differentiator, not a knob to
+    tune for coverage.
+
+    `trim_bounds`, if given, must be the same per-segment `(start, end)`
+    bounds `session_builder.trim_bounds_for_display()` produced for this
+    subject's averaged session signal (same file order). A window is kept
+    only if its start sample falls inside that file's trim bounds — it is
+    then remapped onto the trimmed timeline so this series lines up with
+    the RMS/MDF trend and waveform; windows outside are dropped (they
+    don't exist on the trimmed display timeline). Without `trim_bounds`,
+    the raw untrimmed per-file timeline is used.
+    """
+    files = sb.list_ordered_segments(subject)
+    if len(files) < 2:
+        raise ValueError(
+            f"Subject {subject} không đủ file để ghép buổi tập "
+            f"(cần ít nhất 2, có {len(files)})."
+        )
 
     cfg = mfcv_mod.GridConfig(fs=float(config.FS))
     gate = mfcv_mod.QualityGate()
-    results = mfcv_mod.mfcv_timeseries(
-        col_signal, cfg, gate, win_ms=1000.0, hop_ms=500.0,
-    )
-    return [
-        {"t_s": r.t_s, "cv_ms": r.cv_ms, "accepted": bool(r.accepted)}
-        for r in results
-    ]
+
+    out: list[dict] = []
+    untrimmed_offset = 0
+    trimmed_offset = 0
+    for i, f in enumerate(files):
+        channels = dl.load_channels(f.path)  # (n_time, 64)
+        local_entries = _mfcv_file_series(
+            channels, cfg, gate, win_ms=win_ms, hop_ms=hop_ms,
+            min_col_accept=min_col_accept,
+        )
+
+        if trim_bounds is not None:
+            start, end = trim_bounds[i]
+            for e in local_entries:
+                if not (start <= e["sample_pos"] < end):
+                    continue
+                global_t = round((trimmed_offset + (e["sample_pos"] - start)) / cfg.fs, 3)
+                out.append({"t_s": global_t, "cv_ms": e["cv_ms"], "accepted": e["accepted"]})
+            trimmed_offset += end - start
+        else:
+            for e in local_entries:
+                global_t = round((untrimmed_offset + e["sample_pos"]) / cfg.fs, 3)
+                out.append({"t_s": global_t, "cv_ms": e["cv_ms"], "accepted": e["accepted"]})
+
+        untrimmed_offset += channels.shape[0]
+
+    return out

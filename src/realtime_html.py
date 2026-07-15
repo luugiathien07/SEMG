@@ -9,16 +9,8 @@ import json
 import numpy as np
 from scipy.signal import welch
 
+from . import signal_processing as sp
 from .realtime_session import rectify_envelope
-
-
-# CV (m/s) shown in the trend chart is a demo proxy, not a measured cross-electrode
-# propagation delay: it maps Mean Frequency into the biceps physiological CV range.
-# Real delay-based MFCV estimation lives in src/mfcv.py, but on this dataset its
-# quality gate abstains on almost the whole session (0% accepted in the post-fatigue
-# segment specifically) so it can't drive a full-session line.
-_CV_MIN_MS = 2.5
-_CV_MAX_MS = 5.0
 
 
 def _smooth(values: list[float], window: int = 9) -> list[float]:
@@ -64,15 +56,20 @@ def _compute_trend(
     signal: np.ndarray, fs: int,
     step_sec: float = 0.5, window_sec: float = 1.0, smooth_window: int = 9,
     segment_bounds_sec: list[float] | None = None,
-) -> tuple[list[float], list[float], list[float], list[float]]:
-    """Sliding-window RMS, MDF and a CV (m/s) proxy across the full signal,
-    smoothed with a moving average so the fatigue trend is readable over the
-    inherent window-to-window noise of single-window RMS/PSD estimates.
+) -> tuple[list[float], list[float], list[float]]:
+    """Sliding-window RMS and MDF across the full signal, smoothed with a
+    moving average so the fatigue trend is readable over the inherent
+    window-to-window noise of single-window RMS/PSD estimates.
     `segment_bounds_sec`, when given, keeps smoothing from blending across
-    segment (file) boundaries."""
+    segment (file) boundaries.
+
+    CV is not computed here — the trend chart's CV line comes from the real
+    MFCV estimator (`realtime_session.compute_cv_series`, backed by
+    `mfcv.mfcv_timeseries`), passed into `build_realtime_html` separately
+    as `cv_series`, on its own time grid with its own abstention gate."""
     step = int(step_sec * fs)
     win = int(window_sec * fs)
-    times, rms_vals, mdf_vals, mnf_vals = [], [], [], []
+    times, rms_vals, mdf_vals = [], [], []
     for pos in range(0, len(signal) - win + 1, step):
         chunk = signal[pos : pos + win]
         times.append(round((pos + win / 2) / fs, 2))
@@ -81,24 +78,14 @@ def _compute_trend(
         cumsum = np.cumsum(psd)
         idx = np.searchsorted(cumsum, cumsum[-1] / 2) if cumsum[-1] > 0 else 0
         mdf_vals.append(float(freqs[min(idx, len(freqs) - 1)]))
-        mnf_vals.append(float(np.sum(freqs * psd) / psd.sum()) if psd.sum() > 0 else 0.0)
 
     rms_vals = _smooth_per_segment(times, rms_vals, segment_bounds_sec, smooth_window)
     mdf_vals = _smooth_per_segment(times, mdf_vals, segment_bounds_sec, smooth_window)
-    mnf_vals = _smooth_per_segment(times, mnf_vals, segment_bounds_sec, smooth_window)
 
-    mnf_lo, mnf_hi = min(mnf_vals), max(mnf_vals)
-    mnf_span = mnf_hi - mnf_lo
-    cv_vals = [
-        _CV_MIN_MS + (mnf - mnf_lo) / mnf_span * (_CV_MAX_MS - _CV_MIN_MS)
-        if mnf_span > 0 else (_CV_MIN_MS + _CV_MAX_MS) / 2
-        for mnf in mnf_vals
-    ]
     return (
         times,
         [round(v, 4) for v in rms_vals],
         [round(v, 2) for v in mdf_vals],
-        [round(v, 3) for v in cv_vals],
     )
 
 
@@ -113,6 +100,7 @@ def build_realtime_html(
     target_display_hz: int = 250,
     model_metrics: list[dict] | None = None,
     best_model: str = "",
+    cv_series: list[dict] | None = None,
 ) -> str:
     """Build self-contained HTML for smooth client-side EMG animation.
 
@@ -124,9 +112,16 @@ def build_realtime_html(
     Each dict in `segments_info` must include a `"channelPreds"` key: a
     64-length list (index = physical channel - 1) of 0/1/None, used to color
     the 64-electrode diagram for that segment.
+
+    `cv_series`, if given, is the real MFCV(t) output of
+    `realtime_session.compute_cv_series()` — a list of
+    `{"t_s", "cv_ms", "accepted"}` dicts. Windows with `accepted=False`
+    (the abstention gate rejected them — most windows on this dataset)
+    are kept as gaps in the CV trend line rather than interpolated over.
     """
     env_samples = max(1, int(envelope_window_sec * fs))
-    processed = rectify_envelope(signal, env_samples)
+    filtered = sp.filter_signal(signal, fs)
+    processed = rectify_envelope(filtered, env_samples)
 
     dec = max(1, fs // target_display_hz)
     raw_list = [round(float(x), 3) for x in signal[::dec]]
@@ -135,10 +130,18 @@ def build_realtime_html(
     p1, p99 = float(np.percentile(signal, 1)), float(np.percentile(signal, 99))
     margin = 0.1 * (p99 - p1)
 
+    # RMS/MDF trend runs on the filtered signal (bandpass+notch), not raw —
+    # consistent with the CV trend, which mfcv.mfcv_timeseries() already
+    # filters internally via mfcv.preprocess().
     segment_bounds_sec = [s["end"] for s in segments_info[:-1]]
-    trend_t, trend_rms, trend_mdf, trend_cv = _compute_trend(
-        signal, fs, segment_bounds_sec=segment_bounds_sec,
+    trend_t, trend_rms, trend_mdf = _compute_trend(
+        filtered, fs, segment_bounds_sec=segment_bounds_sec,
     )
+
+    cv_series = cv_series or []
+    trend_cv_t = [e["t_s"] for e in cv_series]
+    trend_cv = [e["cv_ms"] for e in cv_series]
+    trend_cv_accepted = [bool(e["accepted"]) for e in cv_series]
 
     data = {
         "raw": raw_list,
@@ -153,7 +156,9 @@ def build_realtime_html(
         "trendT": trend_t,
         "trendRms": trend_rms,
         "trendMdf": trend_mdf,
+        "trendCvT": trend_cv_t,
         "trendCv": trend_cv,
+        "trendCvAccepted": trend_cv_accepted,
         "models": model_metrics or [],
         "bestModel": best_model,
         "channelLayout": channel_layout,
@@ -187,6 +192,7 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 .chmap-title{font-size:13px;font-weight:600;color:var(--text-soft);text-align:center;margin-bottom:4px}
 canvas{display:block;width:100%}
 .legend{display:flex;gap:16px;font-size:13px;color:var(--text-soft);margin-top:4px;padding-left:50px}
+.legend-note{font-size:12px;color:var(--text-soft);margin-top:2px;padding-left:50px}
 .legend span::before{content:'';display:inline-block;width:14px;height:3px;margin-right:5px;vertical-align:middle;border-radius:1px}
 .lg-raw::before{background:var(--blue)}
 .lg-proc::before{background:var(--gold)}
@@ -259,6 +265,7 @@ canvas{display:block;width:100%}
       <span class="lg-raw">Tín hiệu thô</span>
       <span class="lg-proc">Tín hiệu đã xử lý</span>
     </div>
+    <div class="legend-note">Đã xử lý = lọc thông dải 20–400 Hz + notch 50 Hz, sau đó chỉnh lưu và làm mượt (envelope)</div>
   </div>
   <div class="chart-box chmap-box">
     <div class="chmap-title">Sơ đồ 64 điện cực — Cơ nhị đầu tay (Biceps brachii)</div>
@@ -296,16 +303,17 @@ canvas{display:block;width:100%}
 </div>
 <div class="reco" id="reco">Khuyến nghị: giảm cường độ hoặc cho bệnh nhân nghỉ giữa hiệp</div>
 
-<div class="title">2. Xu hướng RMS, MDF &amp; CV</div>
+<div class="title">2. Xu hướng RMS, MDF &amp; MFCV</div>
 <div class="chart-box">
   <canvas id="trend"></canvas>
   <div class="legend">
     <span class="lg-rms">RMS</span>
     <span class="lg-mdf">MDF (Hz)</span>
-    <span class="lg-cv">CV (m/s)</span>
+    <span class="lg-cv">MFCV (m/s)</span>
     <span class="lg-ok">Normal</span>
     <span class="lg-fat">Fatigue</span>
   </div>
+  <div class="legend-note">Đoạn đứt trên đường MFCV = cổng abstention không đủ điều kiện ước lượng ở đoạn đó.</div>
 </div>
 
 <div class="title section-toggle" onclick="togSection('detailBody','detailArrow')">
@@ -465,17 +473,22 @@ function updateSeg(){
 
 function drawTrend(){
   const ctx=tCtx, w=tW, h=tH;
-  const L=55,R=55,T=22,B=28, pW=w-L-R, pH=h-T-B;
+  // R wider than a single axis needs: MDF and MFCV each get their own
+  // tick-label column to the right of the plot (RMS keeps the left side).
+  const L=62,R=96,T=22,B=28, pW=w-L-R, pH=h-T-B;
+  const mdfLabelX=w-R+4, cvLabelX=w-46;
   ctx.fillStyle='#FFFFFF'; ctx.fillRect(0,0,w,h);
 
-  const tT=D.trendT, tR=D.trendRms, tM=D.trendMdf, tC=D.trendCv;
+  const tT=D.trendT, tR=D.trendRms, tM=D.trendMdf;
+  const tCT=D.trendCvT, tC=D.trendCv, tCA=D.trendCvAccepted;
   if(!tT.length) return;
   const now=curT+D.displayWindow/2;
 
   // y ranges (fixed from full data)
   const rMin=Math.min(...tR)*.9, rMax=Math.max(...tR)*1.1;
   const mMin=Math.min(...tM)*.9, mMax=Math.max(...tM)*1.1;
-  const cMin=Math.min(...tC)*.9, cMax=Math.max(...tC)*1.1;
+  const cvOk=tC.filter((v,i)=>tCA[i]&&v!=null);
+  const cMin=cvOk.length?Math.min(...cvOk)*.9:0, cMax=cvOk.length?Math.max(...cvOk)*1.1:1;
   const xOf=t=>L+(t/D.totalSec)*pW;
   const rY=v=>T+((rMax-v)/(rMax-rMin))*pH;
   const mY=v=>T+((mMax-v)/(mMax-mMin))*pH;
@@ -485,6 +498,23 @@ function drawTrend(){
   ctx.strokeStyle='rgba(30,41,59,.08)'; ctx.lineWidth=1;
   for(let i=0;i<=3;i++){const y=T+i/3*pH; ctx.beginPath();ctx.moveTo(L,y);ctx.lineTo(L+pW,y);ctx.stroke();}
   for(let i=0;i<=6;i++){const x=L+i/6*pW; ctx.beginPath();ctx.moveTo(x,T);ctx.lineTo(x,T+pH);ctx.stroke();}
+
+  // y-axis tick value labels — one column per metric, own scale each
+  ctx.font='10px sans-serif';
+  for(let i=0;i<=3;i++){
+    const y=T+i/3*pH;
+    const rv=rMax-i/3*(rMax-rMin);
+    const mv=mMax-i/3*(mMax-mMin);
+    ctx.fillStyle='#DC2626'; ctx.textAlign='right';
+    ctx.fillText(rv.toFixed(3), L-6, y+3);
+    ctx.fillStyle='#348AC9'; ctx.textAlign='left';
+    ctx.fillText(mv.toFixed(0), mdfLabelX, y+3);
+    if(cvOk.length){
+      const cv=cMax-i/3*(cMax-cMin);
+      ctx.fillStyle='#7C3AED'; ctx.textAlign='left';
+      ctx.fillText(cv.toFixed(2), cvLabelX, y+3);
+    }
+  }
 
   // x labels
   ctx.fillStyle='#64748B'; ctx.font='11px sans-serif'; ctx.textAlign='center';
@@ -530,10 +560,18 @@ function drawTrend(){
   for(let i=0;i<nVis;i++){const x=xOf(tT[i]),y=mY(tM[i]); i?ctx.lineTo(x,y):ctx.moveTo(x,y);}
   ctx.stroke();
 
-  // CV line
+  // CV line — gaps where the MFCV abstention gate rejected the window
+  let nVisCv=0;
+  for(let i=0;i<tCT.length;i++){if(tCT[i]<=now) nVisCv=i+1; else break;}
   ctx.strokeStyle='#7C3AED'; ctx.lineWidth=2;
   ctx.beginPath();
-  for(let i=0;i<nVis;i++){const x=xOf(tT[i]),y=cY(tC[i]); i?ctx.lineTo(x,y):ctx.moveTo(x,y);}
+  let cvDrawing=false;
+  for(let i=0;i<nVisCv;i++){
+    const ok=tCA[i]&&tC[i]!=null;
+    if(!ok){ cvDrawing=false; continue; }
+    const x=xOf(tCT[i]), y=cY(tC[i]);
+    if(cvDrawing) ctx.lineTo(x,y); else { ctx.moveTo(x,y); cvDrawing=true; }
+  }
   ctx.stroke();
 
   // playback cursor
@@ -541,11 +579,11 @@ function drawTrend(){
   const cx=xOf(now);
   ctx.beginPath();ctx.moveTo(cx,T);ctx.lineTo(cx,T+pH);ctx.stroke();
 
-  // axis titles
-  ctx.font='12px sans-serif';
-  ctx.fillStyle='#DC2626'; ctx.textAlign='right'; ctx.fillText('RMS', L-5, T-6);
-  ctx.fillStyle='#348AC9'; ctx.textAlign='left'; ctx.fillText('MDF (Hz)', w-R+5, T-6);
-  ctx.fillStyle='#7C3AED'; ctx.textAlign='center'; ctx.fillText('CV (m/s)', L+pW/2, T-6);
+  // axis titles — one above each tick-label column
+  ctx.font='11px sans-serif';
+  ctx.fillStyle='#DC2626'; ctx.textAlign='left'; ctx.fillText('RMS', 2, T-6);
+  ctx.fillStyle='#348AC9'; ctx.textAlign='left'; ctx.fillText('MDF (Hz)', mdfLabelX, T-6);
+  ctx.fillStyle='#7C3AED'; ctx.textAlign='left'; ctx.fillText('MFCV (m/s)', cvLabelX, T-6);
 }
 
 function updateProg(){

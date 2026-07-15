@@ -92,46 +92,29 @@ def build_session_signal(
     return signal, segments
 
 
-def trim_for_display(
+def trim_bounds_for_display(
     signal: np.ndarray, segments: list[SegmentInfo], fs: int,
     chunk_sec: float = 0.25, lo_frac: float = 0.4, hi_frac: float = 2.0,
     min_run_sec: float = 2.0, edge_trim_sec: float = 1.0,
-) -> tuple[np.ndarray, list[SegmentInfo]]:
-    """Trim each segment's non-steady-state edges before splicing segments
-    back-to-back, so the concatenated waveform and RMS/MDF/CV trend read as
-    one continuous session instead of swinging at every %MVC boundary.
+) -> list[tuple[int, int]]:
+    """Per-segment `(start, end)` sample bounds (local to each segment's own
+    slice of `signal`) that `trim_for_display` keeps — the steady-band
+    onset/offset detection, exposed on its own so any other per-file signal
+    sharing the same `segments` (e.g. the electrode column MFCV runs on,
+    `session_builder.build_session_column`) can be trimmed identically.
+    Reusing the exact same bounds — rather than re-detecting them on a
+    different signal — is what keeps the CV trend on the same time axis as
+    the RMS/MDF trend and waveform, which are computed on the signal this
+    function was actually run on (see `realtime_session.compute_cv_series`).
 
-    Two distinct edge artifacts show up in this dataset's raw files, both
-    handled by the same "steady band" test: (1) the ordinary ramp-in/ramp-out
-    as the subject reaches/releases the target force (low relative to the
-    file's steady level), and (2) an occasional high-amplitude burst right at
-    a file's start (looks like a leftover MVC-calibration contraction, not
-    the submaximal task) — a plain "trim anything below X% of the file"
-    threshold misses (2) entirely since it's abnormally *high*, not low. The
-    band's reference level is the median of the file's own middle 60% (away
-    from either edge), so it isn't itself skewed by the edge artifacts it's
-    meant to detect.
-
-    `edge_trim_sec` then cuts an extra buffer past the detected onset/offset
-    on each side — the steady-band test finds where the signal *starts*
-    settling, but the last stretch right at that boundary is still often
-    visibly different from the true plateau, so a bit more is shaved off
-    each cut edge rather than kept.
-
-    Display only — classification (`realtime_session.assess_segments` /
-    `assess_channel_grid`) must keep running on the untrimmed signal/segments
-    from `build_session_signal_avg`: trimming before feature extraction was
-    tested and flips some models' Fatigue/Normal calls (KNN especially)
-    versus what they were trained on, since the pipeline trains on
-    whole-file (untrimmed) features.
+    See `trim_for_display` for the detection method itself; this returns
+    only the bounds, not the trimmed signal.
     """
     chunk = max(1, int(chunk_sec * fs))
     min_run = max(1, round(min_run_sec / chunk_sec))
     edge_trim = int(edge_trim_sec * fs)
 
-    chunks_out: list[np.ndarray] = []
-    new_segments: list[SegmentInfo] = []
-    offset = 0
+    bounds: list[tuple[int, int]] = []
     for seg in segments:
         x = signal[seg.start_sample:seg.end_sample]
         env = np.array([
@@ -159,6 +142,53 @@ def trim_for_display(
                 start, end = 0, len(x)
             else:
                 start, end = max(0, start), min(len(x), end)
+        bounds.append((start, end))
+    return bounds
+
+
+def trim_for_display(
+    signal: np.ndarray, segments: list[SegmentInfo], fs: int,
+    chunk_sec: float = 0.25, lo_frac: float = 0.4, hi_frac: float = 2.0,
+    min_run_sec: float = 2.0, edge_trim_sec: float = 1.0,
+) -> tuple[np.ndarray, list[SegmentInfo]]:
+    """Trim each segment's non-steady-state edges before splicing segments
+    back-to-back, so the concatenated waveform and RMS/MDF/CV trend read as
+    one continuous session instead of swinging at every %MVC boundary.
+
+    Two distinct edge artifacts show up in this dataset's raw files, both
+    handled by the same "steady band" test (see `trim_bounds_for_display`):
+    (1) the ordinary ramp-in/ramp-out as the subject reaches/releases the
+    target force (low relative to the file's steady level), and (2) an
+    occasional high-amplitude burst right at a file's start (looks like a
+    leftover MVC-calibration contraction, not the submaximal task) — a
+    plain "trim anything below X% of the file" threshold misses (2)
+    entirely since it's abnormally *high*, not low. The band's reference
+    level is the median of the file's own middle 60% (away from either
+    edge), so it isn't itself skewed by the edge artifacts it's meant to
+    detect.
+
+    `edge_trim_sec` then cuts an extra buffer past the detected onset/offset
+    on each side — the steady-band test finds where the signal *starts*
+    settling, but the last stretch right at that boundary is still often
+    visibly different from the true plateau, so a bit more is shaved off
+    each cut edge rather than kept.
+
+    Display only — classification (`realtime_session.assess_segments` /
+    `assess_channel_grid`) must keep running on the untrimmed signal/segments
+    from `build_session_signal_avg`: trimming before feature extraction was
+    tested and flips some models' Fatigue/Normal calls (KNN especially)
+    versus what they were trained on, since the pipeline trains on
+    whole-file (untrimmed) features.
+    """
+    bounds = trim_bounds_for_display(
+        signal, segments, fs, chunk_sec, lo_frac, hi_frac, min_run_sec, edge_trim_sec,
+    )
+
+    chunks_out: list[np.ndarray] = []
+    new_segments: list[SegmentInfo] = []
+    offset = 0
+    for seg, (start, end) in zip(segments, bounds):
+        x = signal[seg.start_sample:seg.end_sample]
         trimmed = x[start:end]
         chunks_out.append(trimmed)
         new_segments.append(SegmentInfo(
