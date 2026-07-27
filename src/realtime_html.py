@@ -101,6 +101,7 @@ def build_realtime_html(
     model_metrics: list[dict] | None = None,
     best_model: str = "",
     cv_series: list[dict] | None = None,
+    cv_slope_window_sec: float = 5.0,
 ) -> str:
     """Build self-contained HTML for smooth client-side EMG animation.
 
@@ -118,6 +119,10 @@ def build_realtime_html(
     `{"t_s", "cv_ms", "accepted"}` dicts. Windows with `accepted=False`
     (the abstention gate rejected them — most windows on this dataset)
     are kept as gaps in the CV trend line rather than interpolated over.
+
+    `cv_slope_window_sec` sets the lookback window (in seconds, trailing
+    the playhead) that the client-side rolling MFCV slope indicator fits
+    its least-squares line over.
     """
     env_samples = max(1, int(envelope_window_sec * fs))
     filtered = sp.filter_signal(signal, fs)
@@ -159,6 +164,7 @@ def build_realtime_html(
         "trendCvT": trend_cv_t,
         "trendCv": trend_cv,
         "trendCvAccepted": trend_cv_accepted,
+        "cvSlopeWindowSec": cv_slope_window_sec,
         "models": model_metrics or [],
         "bestModel": best_model,
         "channelLayout": channel_layout,
@@ -312,8 +318,9 @@ canvas{display:block;width:100%}
     <span class="lg-cv">MFCV (m/s)</span>
     <span class="lg-ok">Normal</span>
     <span class="lg-fat">Fatigue</span>
+    <span id="cvSlope" style="font-weight:600">MFCV slope: —</span>
   </div>
-  <div class="legend-note">Đoạn đứt trên đường MFCV = cổng abstention không đủ điều kiện ước lượng ở đoạn đó.</div>
+  <div class="legend-note">Đoạn đứt trên đường MFCV = cổng abstention không đủ điều kiện ước lượng ở đoạn đó. Slope MFCV = độ dốc hồi quy tuyến tính trên các điểm hợp lệ trong cửa sổ trượt gần playhead nhất (dốc âm = tốc độ dẫn truyền giảm, dấu hiệu mỏi cơ).</div>
 </div>
 
 <div class="title section-toggle" onclick="togSection('detailBody','detailArrow')">
@@ -471,6 +478,24 @@ function updateSeg(){
   tb.innerHTML=s.predictions.map(p=>'<tr><td>'+p.model+'</td><td>'+(p.pred===1?'Fatigue':'Normal')+'</td><td>'+(p.p_fatigue!=null?(p.p_fatigue*100).toFixed(1)+'%':'—')+'</td></tr>').join('');
 }
 
+// Least-squares slope of MFCV over the accepted points trailing `now` by
+// `windowSec` — a live, playhead-local view of the same fit `mfcv.fit_slope`
+// does offline over the whole run, so the on-screen number tracks whichever
+// stretch of the signal the playhead is currently scrubbing through.
+function rollingCvSlope(t, v, ok, now, windowSec){
+  const lo=now-windowSec;
+  let n=0,sT=0,sV=0,sTT=0,sTV=0;
+  for(let i=0;i<t.length;i++){
+    if(t[i]>now) break;
+    if(t[i]<lo||!ok[i]||v[i]==null) continue;
+    n++; sT+=t[i]; sV+=v[i]; sTT+=t[i]*t[i]; sTV+=t[i]*v[i];
+  }
+  if(n<3) return null;
+  const denom=n*sTT-sT*sT;
+  if(Math.abs(denom)<1e-9) return null;
+  return (n*sTV-sT*sV)/denom;
+}
+
 function drawTrend(){
   const ctx=tCtx, w=tW, h=tH;
   // R wider than a single axis needs: MDF and MFCV each get their own
@@ -573,6 +598,23 @@ function drawTrend(){
     if(cvDrawing) ctx.lineTo(x,y); else { ctx.moveTo(x,y); cvDrawing=true; }
   }
   ctx.stroke();
+
+  // rolling MFCV slope — least-squares fit over the accepted points in the
+  // last `cvSlopeWindowSec` seconds, refit every frame as the playhead moves.
+  // Rendered as a DOM readout (not canvas text) so it can't collide with the
+  // tick labels/axis titles already sharing the CV column.
+  const slope=rollingCvSlope(tCT,tC,tCA,now,D.cvSlopeWindowSec);
+  const slopeEl=document.getElementById('cvSlope');
+  if(slopeEl){
+    if(slope==null){
+      slopeEl.textContent='MFCV slope: —';
+      slopeEl.style.color='#94A3B8';
+    }else{
+      const sign=slope>=0?'+':'';
+      slopeEl.textContent=`MFCV slope (${D.cvSlopeWindowSec}s): ${sign}${slope.toFixed(3)} m/s²`;
+      slopeEl.style.color=slope<-0.005?'#DC2626':(slope>0.005?'#16A34A':'#64748B');
+    }
+  }
 
   // playback cursor
   ctx.strokeStyle='rgba(30,41,59,.4)'; ctx.lineWidth=1;
