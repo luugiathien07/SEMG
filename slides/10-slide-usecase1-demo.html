@@ -157,6 +157,49 @@
   .gate-t{font-size:14.5px;font-weight:700;color:var(--ink);grid-column:2}
   .gate-d{font-size:13px;color:var(--ink-soft);line-height:1.5;grid-column:2}
 
+  /* slide 4 — ML pipeline */
+  .ml-layout{display:grid;grid-template-columns:1fr 1fr;gap:18px;
+    position:relative;z-index:1;max-width:1180px}
+
+  .pipeline{grid-column:1/-1;display:flex;align-items:flex-start;
+    background:var(--panel);border:1px solid var(--panel-line);border-radius:12px;
+    padding:16px 22px}
+  .pipe-step{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;
+    text-align:center}
+  .pipe-arrow{align-self:center;color:var(--ink-faint);font-size:20px;
+    flex:0;padding:0 2px;margin-bottom:26px}
+  .pipe-icon{width:44px;height:44px;border-radius:10px;display:flex;align-items:center;
+    justify-content:center;font-family:var(--mono);font-weight:700;font-size:10.5px;
+    letter-spacing:.02em;text-align:center;line-height:1.3}
+  .pipe-icon.amber{background:var(--amber-soft);color:var(--amber)}
+  .pipe-icon.violet{background:var(--violet-soft);color:var(--violet)}
+  .pipe-icon.cyan{background:var(--cyan-soft);color:var(--cyan)}
+  .pipe-icon.green{background:var(--green-soft);color:var(--green)}
+  .pipe-label{font-size:13px;font-weight:700;color:var(--ink);line-height:1.3}
+  .pipe-sub{font-size:11.5px;color:var(--ink-soft);line-height:1.4;max-width:13ch}
+
+  .model-table{display:flex;flex-direction:column;background:var(--panel);
+    border:1px solid var(--panel-line);border-radius:12px;overflow:hidden}
+  .model-row{display:grid;grid-template-columns:2fr repeat(3,1fr);
+    padding:9px 16px;gap:8px;border-bottom:1px solid var(--panel-line)}
+  .model-row:last-child{border-bottom:none}
+  .model-header{font-weight:700;font-size:11px;letter-spacing:.07em;
+    text-transform:uppercase;color:var(--ink-faint)}
+  .model-row span{font-size:13.5px;color:var(--ink)}
+  .model-row span:not(:first-child){text-align:right;font-family:var(--mono);
+    font-size:13px;color:var(--ink-soft)}
+  .model-best{background:var(--green-soft)}
+  .model-best span{color:var(--ink)}
+  .model-best span:not(:first-child){color:var(--green)}
+
+  .design-notes{display:flex;flex-direction:column;gap:12px}
+  .note-item{background:var(--panel);border:1px solid var(--panel-line);
+    border-radius:10px;padding:13px 15px}
+  .note-item.violet{border-left:2px solid var(--violet)}
+  .note-item.amber{border-left:2px solid var(--amber)}
+  .note-t{font-size:14px;font-weight:700;color:var(--ink);margin-bottom:4px}
+  .note-d{font-size:12.5px;color:var(--ink-soft);line-height:1.5}
+
   /* nav */
   .nav{position:fixed;right:28px;bottom:28px;display:flex;gap:10px;
     align-items:center;z-index:5;font-family:var(--mono)}
@@ -190,7 +233,7 @@
 
   <section class="slide" id="s1">
     <canvas id="trace"></canvas>
-    <div class="kicker-num">01 / 03</div>
+    <div class="kicker-num">01 / 04</div>
     <div class="eyebrow"><span class="dot"></span>Usecase 1 — Trước khi vào demo</div>
     <h1>Giám sát mỏi cơ thời gian thực trong buổi tập phục hồi chức năng</h1>
     <p class="lede">Kỹ thuật viên vật lý trị liệu gắn cảm biến sEMG 64 điện cực lên cơ đang tập
@@ -220,7 +263,7 @@
   </section>
 
   <section class="slide" id="s2">
-    <div class="kicker-num">02 / 03</div>
+    <div class="kicker-num">02 / 04</div>
     <div class="eyebrow"><span class="dot"></span>Thuật ngữ xuất hiện trong demo</div>
     <h1>Đọc hiểu các chỉ số trên màn hình demo</h1>
     <p class="lede">Mỗi thuật ngữ dưới đây gắn với đúng con số / vùng bạn sẽ thấy khi buổi tập
@@ -273,7 +316,7 @@
   </section>
 
   <section class="slide" id="s3">
-    <div class="kicker-num">03 / 03</div>
+    <div class="kicker-num">03 / 04</div>
     <div class="eyebrow"><span class="dot"></span>Điểm khác biệt an toàn</div>
     <h1>MFCV &amp; cổng abstention: biết khi nào nên im lặng</h1>
     <p class="lede">Đường <span class="badge cv">MFCV</span> trong biểu đồ xu hướng không phải lúc nào cũng có
@@ -315,6 +358,102 @@
             dấu — bộ 4 điện cực dính vùng này bị loại riêng, không kéo tụt cả cột.</div>
         </div>
       </div>
+    </div>
+  </section>
+
+
+  <section class="slide" id="s4">
+    <div class="kicker-num">04 / 04</div>
+    <div class="eyebrow"><span class="dot"></span>Mô hình học máy</div>
+    <h1>Pipeline phân loại Mỏi / Không mỏi</h1>
+    <p class="lede">Mỗi cửa sổ 1 giây (2 000 mẫu) trên mỗi kênh tạo ra 14 đặc trưng. Các đặc trưng đó được đưa qua bộ phân loại KNN — mô hình dẫn đầu trong benchmark LOSO trên 10 đối tượng.</p>
+
+    <div class="ml-layout">
+
+      <!-- Pipeline strip -->
+      <div class="pipeline">
+        <div class="pipe-step">
+          <div class="pipe-icon amber">64<br>CH</div>
+          <div class="pipe-label">Tín hiệu sEMG</div>
+          <div class="pipe-sub">Cửa sổ 1 s @ 2 kHz</div>
+        </div>
+        <div class="pipe-arrow">›</div>
+        <div class="pipe-step">
+          <div class="pipe-icon amber">14<br>FT</div>
+          <div class="pipe-label">Trích đặc trưng</div>
+          <div class="pipe-sub">RMS, MAV, MDF, MNF, STD, Skew, Kurt, Spectral×3, Mean, Max, Min, Entropy</div>
+        </div>
+        <div class="pipe-arrow">›</div>
+        <div class="pipe-step">
+          <div class="pipe-icon violet">mRMR</div>
+          <div class="pipe-label">Chọn đặc trưng</div>
+          <div class="pipe-sub">Top-3 cho SVM; tất cả 14 cho KNN/LDA/DT</div>
+        </div>
+        <div class="pipe-arrow">›</div>
+        <div class="pipe-step">
+          <div class="pipe-icon cyan">SMOTE</div>
+          <div class="pipe-label">Cân bằng lớp</div>
+          <div class="pipe-sub">Oversample lớp Mỏi về 1:1 (KNN/DT còn thử 1.3×, 1.6×)</div>
+        </div>
+        <div class="pipe-arrow">›</div>
+        <div class="pipe-step">
+          <div class="pipe-icon green">KNN<br>1-NN</div>
+          <div class="pipe-label">Phân loại</div>
+          <div class="pipe-sub">Mỏi / Không mỏi per-channel</div>
+        </div>
+      </div>
+
+      <!-- Model comparison table -->
+      <div class="model-table">
+        <div class="model-row">
+          <span class="model-header">Mô hình</span>
+          <span class="model-header" style="text-align:right">Acc</span>
+          <span class="model-header" style="text-align:right">F1</span>
+          <span class="model-header" style="text-align:right">AUC</span>
+        </div>
+        <div class="model-row model-best">
+          <span>KNN (1-NN) ✦</span>
+          <span>0.991</span>
+          <span>0.984</span>
+          <span>0.987</span>
+        </div>
+        <div class="model-row">
+          <span>KNN (5-NN)</span>
+          <span>0.987</span>
+          <span>0.976</span>
+          <span>0.995</span>
+        </div>
+        <div class="model-row">
+          <span>LDA</span>
+          <span>0.940</span>
+          <span>0.903</span>
+          <span>0.997</span>
+        </div>
+        <div class="model-row">
+          <span>SVM (linear)</span>
+          <span>0.900</span>
+          <span>0.850</span>
+          <span>0.996</span>
+        </div>
+        <div class="model-row" style="padding:8px 16px">
+          <span class="model-header" style="grid-column:1/-1;text-transform:none;letter-spacing:0;font-size:11.5px">
+            ✦ Hold-out: Sujet 6 — LOSO trung bình 10 đối tượng: F1 = 0.84 ± 0.09
+          </span>
+        </div>
+      </div>
+
+      <!-- Design notes -->
+      <div class="design-notes">
+        <div class="note-item violet">
+          <div class="note-t">Tối ưu hoá F-beta (β = 2)</div>
+          <div class="note-d">GridSearchCV và ngưỡng quyết định đều tối ưu F<sub>2</sub> thay vì F<sub>1</sub> — bỏ sót mỏi thật (FN) nặng hơn báo nhầm (FP) về mặt lâm sàng.</div>
+        </div>
+        <div class="note-item amber">
+          <div class="note-t">LOSO — Leave-One-Subject-Out</div>
+          <div class="note-d">Huấn luyện trên 9 đối tượng, kiểm tra trên 1 đối tượng hoàn toàn mới. GridSearchCV chạy trên tập train, không bao giờ chạm vào tập test.</div>
+        </div>
+      </div>
+
     </div>
   </section>
 
