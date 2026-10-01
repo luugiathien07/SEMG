@@ -1,3 +1,45 @@
+# sEMG AI Platform — POC Vinmec
+
+## Chạy nhanh (POC demo)
+
+```bash
+# 1. Kích hoạt môi trường Python
+source ~/.venv/bin/activate       # hoặc: conda activate <env>
+
+# 2. Cài dependencies (chỉ cần làm 1 lần)
+pip install -r requirements.txt
+
+# 3. Chạy landing page POC
+streamlit run poc_vinmec.py --server.port 8502
+```
+
+Mở trình duyệt tại: **http://localhost:8502**
+
+### Cấu trúc demo (3 trang — chọn trên sidebar)
+
+| Trang | Nội dung |
+|---|---|
+| 📋 Giới thiệu | Bài toán, pipeline, bảng kết quả mô hình |
+| ⚡ Demo UC1 | Giám sát mỏi cơ real-time — 64 kênh · Nhấn "Bắt đầu mô phỏng" |
+| 📈 Demo UC2 | Theo dõi tiến trình phục hồi cơ qua các phiên |
+
+> **Lần đầu chạy UC1** sẽ mất ~1–2 phút để huấn luyện mô hình và ghép dữ liệu.
+> Từ lần thứ hai trở đi kết quả được cache lại, khởi động gần như tức thì.
+
+---
+
+### Các app khác trong project
+
+```bash
+# App phân tích đầy đủ (5 tab: tổng quan, tín hiệu, đặc trưng, mRMR, phân loại)
+streamlit run app.py
+
+# App real-time UC1 + UC2 độc lập (không có trang giới thiệu)
+streamlit run app_realtime_session.py
+```
+
+---
+
 # Phát hiện Mỏi cơ từ tín hiệu sEMG
 
 Demo học máy phát hiện **trạng thái mỏi cơ** từ tín hiệu điện cơ bề mặt
@@ -18,9 +60,14 @@ và công thái học (ergonomics).
 % MVC (Maximal Voluntary Contraction) khác nhau, kèm bài tập gây mỏi. Mỗi lần đo
 lưu thành một file CSV; mỗi kênh của một file là **một mẫu** cho bộ phân loại.
 
-**Gán nhãn.** Suy ra từ tên file `Sujet_{id}_{điều_kiện}_emg.csv`: điều kiện đo
-có chứa `fatigue` (bài gây mỏi, và đo lại sau khi gây mỏi) → **Fatigue**; các mức
-co cơ thường (10/20/40/60/90 % MVC) → **Normal**.
+**Gán nhãn.** Suy ra từ số %MVC nhúng trong tên file điều kiện đo
+`Sujet_{id}_{điều_kiện}_emg.csv` (ví dụ "10" trong `10_ap_fatigue`, "70" trong
+`fatigue_70`): trên ngưỡng sinh lý `FATIGUE_MVC_THRESHOLD = 60` → **Fatigue**;
+từ ngưỡng đó trở xuống → **Normal** (`src/config.py`). Quy tắc này thay thế quy
+tắc cũ dựa theo từ khoá `fatigue` trong tên file — quy tắc cũ gán nhãn sai file
+`10_ap_fatigue` (chỉ co cơ 10% MVC, cường độ rất nhẹ) thành Fatigue chỉ vì tên
+file có chữ "fatigue", trong khi bản thân đoạn co cơ đó không đủ mạnh để gây mỏi
+thật sự.
 
 ## 2. Phương pháp
 

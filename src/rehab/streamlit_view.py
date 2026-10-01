@@ -302,7 +302,6 @@ def _render_recovery_metrics() -> None:
         st.info(f"Không có session impaired_arm cho {patient}.")
         return
 
-    baseline_rms = trend_df["baseline_rms"].iloc[0]
     baseline_mdf = trend_df["baseline_mdf"].iloc[0]
 
     col_sym, col_mdf = st.columns(2)

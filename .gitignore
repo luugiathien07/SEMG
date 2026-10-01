@@ -24,4 +24,14 @@ docs/superpowers/
 
 scenario01_sub50/
 
-web-ui/node_modules/
+web-ui/node_modules/Motionlab/users.json
+
+# PhysioMio derivatives at window/segment level (data use agreement: no redistribution)
+scripts/physiomio_paper/*.parquet
+scripts/physiomio_paper/*.npz
+scripts/physiomio_paper/fma_items.csv
+scripts/physiomio_paper/fma_oof.csv
+scripts/physiomio_paper/fma_longitudinal.csv
+scripts/physiomio_paper/fma_patient.csv
+scripts/physiomio_paper/arm_oof.csv
+scripts/physiomio_paper/fma_session_trajectories.csv

@@ -4,6 +4,7 @@ import numpy as np
 from src import config as cfg
 from src.quality_control import (
     _fraction_in_runs, clipped_fraction, dropout_fraction,
+    QCResult, assess_signal_quality, assess_channel_matrix_quality,
 )
 
 
@@ -65,11 +66,6 @@ class TestDropoutFraction:
             min_run=cfg.QC_DROPOUT_MIN_RUN,
         )
         assert frac > 0.03
-
-
-from src.quality_control import (
-    QCResult, assess_signal_quality, assess_channel_matrix_quality,
-)
 
 
 class TestAssessSignalQuality:

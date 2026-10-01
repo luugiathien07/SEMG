@@ -73,7 +73,8 @@ FEAT_NAMES = ["RMS", "MAV", "WL", "ZC", "SSC", "MDF", "MNF"]
 
 
 def windowize(sig, f):
-    step = int(WIN_SEC * FS); hop = int(step * (1 - OVERLAP))
+    step = int(WIN_SEC * FS)
+    hop = int(step * (1 - OVERLAP))
     X, y, tc = [], [], []
     for a in range(0, len(sig) - step, hop):
         w = sig[a:a + step]
@@ -93,8 +94,10 @@ def run():
         sig, f = simulate_sustained(th)
         X, y, tc = windowize(sig, f)
         sessions.append({"session": s, "X": X, "y": y, "tc": tc, "t_half": th})
-        Xall.append(X); yall.append(y)
-    Xall = np.vstack(Xall); yall = np.concatenate(yall)
+        Xall.append(X)
+        yall.append(y)
+    Xall = np.vstack(Xall)
+    yall = np.concatenate(yall)
 
     # ---- huấn luyện KNN phân loại mỏi ----
     Xtr, Xte, ytr, yte = train_test_split(Xall, yall, test_size=0.3,

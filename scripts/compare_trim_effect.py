@@ -49,7 +49,6 @@ def main() -> None:
     signal, segments = sb.build_session_signal_avg(subject)
 
     # --- Untrimmed: raw concatenation, no ramp-in/out cut -------------------
-    bounds_untrimmed = [(0, seg.end_sample - seg.start_sample) for seg in segments]
     seg_bounds_untrimmed_sec = [s.end_sample / config.FS for s in segments[:-1]]
     t_u, rms_u, mdf_u = _rms_mdf_trend(signal, config.FS, seg_bounds_untrimmed_sec)
     cv_u = rts.compute_cv_series(subject, trim_bounds=None)
@@ -108,14 +107,16 @@ def main() -> None:
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(11, 7), sharex=False)
     ax1.plot(t_u, rms_u, color=AMBER, lw=1.5, label="RMS (chưa cắt)")
     ax1.set_title("RMS — chưa cắt (raw concat)", fontsize=11, color=NAVY, loc="left")
-    ax1.set_xlabel("Thời gian [s]"); ax1.set_ylabel("RMS")
+    ax1.set_xlabel("Thời gian [s]")
+    ax1.set_ylabel("RMS")
     for b in seg_bounds_untrimmed_sec:
         ax1.axvline(b, color=GRAY, alpha=0.3, lw=1, ls="--")
     ax1.grid(alpha=0.15)
 
     ax2.plot(t_t, rms_t, color=TEAL, lw=1.5, label="RMS (đã cắt)")
     ax2.set_title("RMS — đã cắt ramp-in/out (hiện tại)", fontsize=11, color=NAVY, loc="left")
-    ax2.set_xlabel("Thời gian [s]"); ax2.set_ylabel("RMS")
+    ax2.set_xlabel("Thời gian [s]")
+    ax2.set_ylabel("RMS")
     for b in seg_bounds_trimmed_sec:
         ax2.axvline(b, color=GRAY, alpha=0.3, lw=1, ls="--")
     ax2.grid(alpha=0.15)
@@ -133,7 +134,8 @@ def main() -> None:
         ax3.plot(tu, cu, "o-", color=AMBER, ms=3, lw=1.2, label="MFCV (chưa cắt)")
     ax3.set_title(f"MFCV — chưa cắt ({a_u}/{n_u} chấp nhận, {r_u:.0f}%)",
                  fontsize=11, color=NAVY, loc="left")
-    ax3.set_xlabel("Thời gian [s]"); ax3.set_ylabel("MFCV [m/s]")
+    ax3.set_xlabel("Thời gian [s]")
+    ax3.set_ylabel("MFCV [m/s]")
     for b in seg_bounds_untrimmed_sec:
         ax3.axvline(b, color=GRAY, alpha=0.3, lw=1, ls="--")
     ax3.grid(alpha=0.15)
@@ -143,7 +145,8 @@ def main() -> None:
         ax4.plot(tt, ct, "o-", color=TEAL, ms=3, lw=1.2, label="MFCV (đã cắt)")
     ax4.set_title(f"MFCV — đã cắt ({a_t}/{n_t} chấp nhận, {r_t:.0f}%)",
                  fontsize=11, color=NAVY, loc="left")
-    ax4.set_xlabel("Thời gian [s]"); ax4.set_ylabel("MFCV [m/s]")
+    ax4.set_xlabel("Thời gian [s]")
+    ax4.set_ylabel("MFCV [m/s]")
     for b in seg_bounds_trimmed_sec:
         ax4.axvline(b, color=GRAY, alpha=0.3, lw=1, ls="--")
     ax4.grid(alpha=0.15)

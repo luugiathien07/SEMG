@@ -44,7 +44,8 @@ def main() -> None:
 
     lines: list[str] = []
     def emit(s: str = "") -> None:
-        print(s); lines.append(s)
+        print(s)
+        lines.append(s)
 
     emit("=" * 70)
     emit("LEAVE-ONE-SUBJECT-OUT — single held-out fold (BME 2024 protocol)")

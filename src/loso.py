@@ -37,7 +37,6 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field
-from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -46,7 +45,6 @@ from sklearn.calibration import CalibratedClassifierCV
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.metrics import (
     accuracy_score,
-    confusion_matrix,
     f1_score,
     precision_score,
     recall_score,
@@ -63,8 +61,8 @@ from . import feature_extraction as fe
 from . import feature_selection as fs
 
 # --- Where to read the raw per-subject folders and cache extracted features ---
-FULL_DATA_DIR = config.PROJECT_ROOT / "dataset" / "full_emg_data"
-LOSO_CACHE = FULL_DATA_DIR / "cache" / "loso_features.parquet"
+FULL_DATA_DIR = config.DATASET_DIR
+LOSO_CACHE = config.CACHE_DIR / "loso_features.parquet"
 
 _NAME_RE = re.compile(r"^Sujet_(\d+)_(.+)_emg$", re.IGNORECASE)
 _NUM_RE = re.compile(r"\d+")

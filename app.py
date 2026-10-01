@@ -187,7 +187,7 @@ FEATURE_TOOLTIPS: dict[str, dict[str, str]] = {
     },
     "Min": {
         "meaning": "Giá trị cực tiểu của biên độ tín hiệu EMG trong cửa sổ phân tích.",
-        "role": "Kết hợp với Max để đánh giá biên độ dao động tổng thể (dynamic range) của tín hiệu sEMG.",
+        "role": "Kết hợp với Max để đánh giá biên độ dao động tổng thể của tín hiệu sEMG.",
     },
     "STD": {
         "meaning": "Standard Deviation — độ lệch chuẩn, đo mức biến thiên của biên độ tín hiệu.",

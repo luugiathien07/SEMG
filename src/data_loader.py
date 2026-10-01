@@ -11,6 +11,7 @@ compute the per-file valid-channel mask (drop all-zero / dead channels).
 """
 from __future__ import annotations
 
+import os
 import re
 from dataclasses import dataclass
 from pathlib import Path
@@ -57,11 +58,14 @@ def list_files(dataset_dir: Path | None = None) -> list[FileInfo]:
     """All parseable CSVs in the dataset dir, sorted by (subject, condition)."""
     dataset_dir = dataset_dir or config.DATASET_DIR
     infos = []
-    # rglob so both a flat dataset dir and one-folder-per-subject layouts work.
-    for p in sorted(dataset_dir.rglob("*.csv")):
-        info = parse_filename(p)
-        if info is not None:
-            infos.append(info)
+    # os.walk with followlinks=True so symlinked subject folders are traversed.
+    for root, _dirs, files in os.walk(dataset_dir, followlinks=True):
+        for fname in sorted(files):
+            if not fname.endswith(".csv"):
+                continue
+            info = parse_filename(Path(root) / fname)
+            if info is not None:
+                infos.append(info)
     infos.sort(key=lambda i: (i.subject, i.condition))
     return infos
 

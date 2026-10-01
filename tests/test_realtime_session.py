@@ -10,8 +10,9 @@ from src import mfcv as mfcv_mod
 from src.evaluate import ModelResult
 from src.session_builder import SegmentInfo
 from src.realtime_session import (
-    rectify_envelope, PlaybackStep, build_playback_steps, SegmentAssessment,
+    rectify_envelope, build_playback_steps, SegmentAssessment,
     assess_segments, best_model_name, assess_channel_grid,
+    compute_cv_series,
 )
 
 
@@ -261,9 +262,6 @@ class TestAssessChannelGrid:
             # file, and not in valid_channels) must also be None
             assert entry[3] is None
             assert entry[63] is None
-
-
-from src.realtime_session import compute_cv_series
 
 
 def _fake_channels(n_time: int, seed: int) -> np.ndarray:
